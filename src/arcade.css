@@ -1,0 +1,886 @@
+/* Arcade menu layout. Shared arena colors and motion live in dojo.css. */
+.app:not(.view-game) {
+  max-width: none;
+  min-height: 100dvh;
+  padding: 0 clamp(24px, 4.4vw, 78px);
+  background: radial-gradient(ellipse at 78% 30%, #315c3e 0, transparent 47%), #163f30;
+  color: #fff5dc;
+  overflow-x: clip;
+}
+.app:not(.view-game) .site-header {
+  border-color: #ffffff20;
+  height: 92px;
+}
+.app:not(.view-game) .brand-accent {
+  color: #f4aa5e;
+}
+.app:not(.view-game) .brand-icon,
+.app:not(.view-game) .ninja-eyes {
+  background: #f4aa5e;
+  color: #173e2b;
+}
+.app:not(.view-game) .connect-button {
+  background: #ffffff0b;
+  border-color: #ffffff35;
+  color: #fff5dc;
+}
+.app:not(.view-game) .icon-button {
+  color: #fff5dc;
+}
+.arcade-menu {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  grid-template-rows: 1fr auto;
+  min-height: calc(100dvh - 146px);
+  max-width: 1440px;
+  margin: auto;
+  position: relative;
+}
+.arcade-copy {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  padding: 32px 0 38px;
+}
+.arcade-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b7ccb0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+.arcade-kicker > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f4aa5e;
+  box-shadow: 0 0 0 5px #f4aa5e17;
+}
+.arcade-copy h1 {
+  font-size: clamp(55px, 6.8vw, 106px);
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+  margin: 26px 0 22px;
+  font-weight: 600;
+}
+.arcade-copy h1 em {
+  font-style: normal;
+  color: #f4aa5e;
+}
+.arcade-intro {
+  font-size: 15px;
+  color: #c4d2bf;
+  line-height: 1.8;
+}
+.arcade-rules {
+  display: flex;
+  gap: 23px;
+  margin: 26px 0;
+}
+.arcade-rules > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #e5a25c;
+  font: 500 11px Outfit;
+}
+.arcade-rules b {
+  color: #e2ead8;
+  font: 500 13px 'DM Sans';
+}
+.arcade-start {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #f4aa5e;
+  color: #183d2b;
+  border-radius: 15px;
+  padding: 20px 25px;
+  min-width: 265px;
+  font: 600 23px Outfit;
+  box-shadow:
+    0 6px 0 #b06e35,
+    0 15px 30px #081f3040;
+  transition:
+    transform 0.16s,
+    box-shadow 0.16s;
+}
+.arcade-start:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 9px 0 #b06e35,
+    0 20px 35px #081f3040;
+}
+.arcade-start:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #b06e35;
+}
+.arcade-start > span {
+  margin-left: auto;
+  opacity: 0.6;
+}
+.arcade-secondary {
+  display: flex;
+  gap: 24px;
+  margin-top: 28px;
+}
+.arcade-secondary button,
+.arcade-back {
+  background: transparent;
+  color: #dfebd6;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.arcade-secondary button:hover,
+.arcade-back:hover {
+  color: #f4aa5e;
+}
+.arcade-stage {
+  position: relative;
+  min-height: 480px;
+}
+.arcade-orbit {
+  position: absolute;
+  width: min(95%, 540px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid #cde8a52b;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #b9d37c0c 60%, #b9d37c08 60%);
+}
+.arcade-orbit:before,
+.arcade-orbit:after {
+  content: '';
+  position: absolute;
+  inset: 22px;
+  border: 1px dashed #cde8a529;
+  border-radius: 50%;
+}
+.arcade-orbit:after {
+  inset: 65px;
+  border-style: solid;
+}
+.arcade-scene {
+  position: absolute;
+  inset: -6% -8% 11%;
+  pointer-events: none;
+}
+.stage-time {
+  position: absolute;
+  right: 0;
+  top: 12%;
+  transform: rotate(6deg);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 12px 17px;
+  color: #163f30;
+  background: #e6ecc7;
+  border-radius: 9px;
+  box-shadow: 4px 5px 0 #061d1733;
+}
+.stage-time strong {
+  font-weight: 600;
+}
+.stage-hearts {
+  position: absolute;
+  left: 6%;
+  top: 17%;
+  color: #f4aa5e;
+  display: flex;
+  gap: 5px;
+  transform: rotate(-12deg);
+}
+.stage-star {
+  position: absolute;
+  color: #f4aa5e;
+  font-size: 40px;
+  animation: arcade-twinkle 5s ease-in-out infinite;
+}
+.star-a {
+  top: 37%;
+  right: 0;
+}
+.star-b {
+  top: 61%;
+  left: 5%;
+  font-size: 30px;
+  animation-delay: -2s;
+}
+.recipe-selector {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: center;
+  position: absolute;
+  bottom: 7%;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+.recipe-selector > div {
+  min-width: 230px;
+}
+.recipe-selector small {
+  display: block;
+  color: #c3d6b5;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.recipe-selector h2 {
+  font-size: 32px;
+}
+.recipe-selector > button {
+  display: grid;
+  place-items: center;
+  background: #ffffff0a;
+  border: 1px solid #ffffff30;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff1cc;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.recipe-selector > button:hover {
+  background: #f4aa5e;
+  color: #163f30;
+  transform: scale(1.1);
+}
+.arcade-bottom {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 0 24px;
+}
+.recipe-tokens {
+  display: flex;
+  gap: 12px;
+}
+.recipe-tokens > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border-radius: 13px;
+  color: #b9ccac;
+  background: #112f2580;
+  border: 1px solid #ffffff16;
+  padding: 9px 16px 9px 10px;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+.recipe-tokens > button:hover {
+  transform: translateY(-4px);
+  border-color: #f4aa5e;
+}
+.recipe-tokens > button.selected {
+  color: #fff3d7;
+  background: #315439;
+  border-color: #edac65;
+  box-shadow: 0 4px 0 #0d2e20;
+}
+.recipe-tokens svg {
+  width: 65px;
+  height: 54px;
+}
+.recipe-tokens strong {
+  font: 500 14px Outfit;
+}
+.recipe-tokens > button > span {
+  font: 500 10px Outfit;
+  opacity: 0.6;
+}
+.arcade-bottom > p {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #aabea1;
+}
+.arcade-bottom > p strong {
+  color: #e1e9d7;
+  font-weight: 500;
+}
+footer.arcade-footer {
+  min-height: 54px;
+  height: auto;
+  padding: 13px 0;
+  border-color: #ffffff20;
+  margin: 0;
+  color: #adc3a7;
+  font-size: 10px;
+  gap: 16px;
+}
+.arcade-footer a {
+  text-decoration: none;
+  padding: 6px;
+}
+.arcade-footer a:hover {
+  color: #f4aa5e;
+}
+.nickname-field {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: #f2edda;
+  max-width: 325px;
+}
+.nickname-field input {
+  background: #0f2e23;
+  border: 1px solid #aec29460;
+  border-radius: 10px;
+  padding: 13px 16px;
+  color: #fff5dc;
+  font-size: 22px;
+  width: 100%;
+}
+.nickname-field + small {
+  display: block;
+  margin: 9px 0 22px;
+  font-size: 10px;
+  color: #bbceaf;
+}
+.arcade-small {
+  margin-top: 19px;
+  font-size: 11px;
+  color: #b1c2a7;
+}
+.menu-recipes .arcade-copy h1 {
+  font-size: clamp(45px, 5vw, 74px);
+  margin-top: 12px;
+  margin-bottom: 19px;
+}
+.menu-recipes .recipe-selector {
+  bottom: 16%;
+}
+.menu-recipes .arcade-scene {
+  bottom: 18%;
+}
+.menu-ingredients {
+  position: absolute;
+  bottom: 1%;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+}
+.menu-ingredients > span {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  font-size: 26px;
+}
+.menu-ingredients small {
+  font-size: 9px;
+  color: #c5d3b6;
+}
+.arcade-back {
+  margin: 16px 0 0;
+}
+.player-label {
+  display: inline-block;
+  font-size: 12px;
+  color: #557145;
+  margin: 3px 0;
+}
+.save-status {
+  font-size: 12px !important;
+  color: #506743 !important;
+  max-width: 500px;
+}
+.practice-range {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #edf2dce8, #f7f7ed);
+  z-index: 5;
+}
+.practice-title {
+  text-align: center;
+  position: absolute;
+  top: 6%;
+  left: 15px;
+  right: 15px;
+}
+.practice-title h2 {
+  font-size: 32px;
+  margin: 10px 0;
+}
+.practice-title > p:last-child {
+  font-size: 12px;
+  color: #718165;
+}
+.practice-target {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(0.7);
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 2px dashed #9bac8a;
+  border-radius: 50%;
+  font: 600 25px Outfit;
+  color: #8d9d7b;
+  opacity: 0.3;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.practice-target.current {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  border: 3px solid #df8345;
+  background: #f5b57940;
+  box-shadow: 0 0 0 10px #df834518;
+  color: #754326;
+}
+.practice-target.done {
+  opacity: 1;
+  background: #244d36;
+  color: white;
+  border: 0;
+  transform: translate(-50%, -50%) scale(0.65);
+}
+.practice-cursor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border: 2px solid #244d36;
+  border-radius: 50%;
+  background: #ffffff88;
+  pointer-events: none;
+  z-index: 3;
+}
+.practice-cursor:after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  top: 7px;
+  left: 7px;
+  background: #244d36;
+  border-radius: 50%;
+}
+.practice-cursor.cutting {
+  border-color: #df8345;
+  box-shadow: 0 0 0 7px #df834544;
+}
+.practice-actions {
+  position: absolute;
+  bottom: 5%;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.practice-actions > span {
+  font-size: 12px;
+}
+.practice-actions .text-button {
+  font-size: 10px;
+}
+@keyframes arcade-twinkle {
+  50% {
+    transform: rotate(25deg) scale(0.85);
+    opacity: 0.55;
+  }
+}
+@media (min-width: 1400px) {
+  .arcade-stage {
+    min-height: 580px;
+  }
+}
+@media (max-width: 1100px) {
+  .recipe-tokens strong {
+    font-size: 12px;
+  }
+  .recipe-tokens > button {
+    padding-right: 10px;
+    gap: 4px;
+  }
+  .arcade-bottom > p {
+    display: none;
+  }
+  .arcade-copy h1 {
+    font-size: 70px;
+  }
+  .arcade-rules {
+    gap: 15px;
+  }
+  .arcade-stage {
+    min-height: 480px;
+  }
+}
+@media (max-width: 800px) {
+  .app:not(.view-game) {
+    padding: 0 22px;
+  }
+  .app:not(.view-game) .site-header {
+    height: 85px;
+    gap: 12px;
+  }
+  .site-header .header-actions .connect-button span {
+    display: none;
+  }
+  .site-header .header-actions {
+    gap: 8px;
+  }
+  .arcade-copy h1 {
+    font-size: 56px;
+  }
+  .arcade-intro {
+    font-size: 12px;
+  }
+  .arcade-rules {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .arcade-start {
+    min-width: 225px;
+    padding: 17px 20px;
+    font-size: 20px;
+  }
+  .arcade-stage {
+    min-height: 460px;
+  }
+  .stage-time {
+    top: 6%;
+    font-size: 9px;
+  }
+  .stage-hearts {
+    top: 20%;
+    left: 0;
+  }
+  .recipe-selector {
+    gap: 7px;
+  }
+  .recipe-selector > div {
+    min-width: 155px;
+  }
+  .recipe-selector h2 {
+    font-size: 24px;
+  }
+  .recipe-selector small {
+    font-size: 8px;
+    letter-spacing: 0.8px;
+  }
+  .recipe-selector > button {
+    width: 32px;
+    height: 32px;
+  }
+  .recipe-tokens {
+    width: 100%;
+  }
+  .recipe-tokens > button {
+    flex: 1;
+    padding: 6px;
+  }
+  .recipe-tokens svg {
+    width: 46px;
+    height: 48px;
+  }
+  .recipe-tokens > button > span {
+    display: none;
+  }
+  .arcade-footer > span:first-child {
+    display: none;
+  }
+  .menu-ingredients {
+    gap: 10px;
+  }
+  .menu-ingredients > span {
+    font-size: 22px;
+  }
+  .menu-ingredients small {
+    font-size: 8px;
+  }
+}
+@media (max-width: 580px) {
+  .app:not(.view-game) .brand {
+    font-size: 20px;
+  }
+  .app:not(.view-game) .brand-icon {
+    width: 32px;
+    height: 37px;
+  }
+  .app:not(.view-game) .settings-button {
+    display: none;
+  }
+  .arcade-menu {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .arcade-copy {
+    padding: 26px 0 4px;
+    text-align: center;
+  }
+  .arcade-kicker {
+    justify-content: center;
+    font-size: 9px;
+  }
+  .arcade-copy h1 {
+    font-size: 60px;
+    margin: 18px 0 13px;
+  }
+  .arcade-intro {
+    font-size: 12px;
+  }
+  .arcade-rules {
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .arcade-start {
+    margin: 0 auto;
+    min-width: 265px;
+    justify-content: center;
+  }
+  .arcade-secondary {
+    justify-content: center;
+    margin-top: 19px;
+  }
+  .arcade-stage {
+    min-height: 310px;
+  }
+  .arcade-scene {
+    inset: -12% 0 7%;
+  }
+  .arcade-orbit {
+    width: 245px;
+    top: 45%;
+  }
+  .stage-time {
+    right: 0;
+    top: 15%;
+    padding: 8px 10px;
+  }
+  .stage-hearts {
+    left: 3%;
+    top: 23%;
+  }
+  .stage-hearts svg {
+    width: 13px;
+  }
+  .star-a {
+    top: 55%;
+    right: 4%;
+  }
+  .star-b {
+    top: 60%;
+  }
+  .recipe-selector {
+    bottom: 3%;
+  }
+  .arcade-bottom {
+    grid-column: 1;
+    padding: 15px 0 20px;
+  }
+  .recipe-tokens {
+    gap: 7px;
+  }
+  .recipe-tokens > button {
+    flex-direction: column;
+    gap: 0;
+    padding: 7px 4px;
+  }
+  .recipe-tokens strong {
+    font-size: 11px;
+  }
+  .recipe-tokens svg {
+    width: 65px;
+    height: 45px;
+  }
+  .arcade-footer {
+    justify-content: space-between;
+    font-size: 8px !important;
+  }
+  .menu-recipes .arcade-copy h1 {
+    font-size: 44px;
+  }
+  .menu-recipes .arcade-copy h1 br {
+    display: none;
+  }
+  .menu-recipes .arcade-back {
+    position: absolute;
+    top: 20px;
+    font-size: 0;
+  }
+  .nickname-field {
+    margin: 0 auto;
+    text-align: left;
+  }
+  .nickname-field + small {
+    font-size: 9px;
+  }
+  .menu-recipes .arcade-stage {
+    min-height: 340px;
+  }
+  .menu-recipes .recipe-selector {
+    bottom: 17%;
+  }
+  .menu-recipes .arcade-scene {
+    inset: -9% 0 15%;
+  }
+  .practice-title h2 {
+    font-size: 25px;
+  }
+  .practice-title .eyebrow {
+    font-size: 8px;
+  }
+  .practice-title > p:last-child {
+    font-size: 10px;
+    max-width: 260px;
+    margin: auto;
+    line-height: 1.5;
+  }
+  .practice-actions {
+    gap: 9px;
+    bottom: 3%;
+    flex-direction: column;
+  }
+  .practice-target {
+    width: 50px;
+    height: 50px;
+  }
+  .practice-actions .button {
+    font-size: 11px;
+    padding: 13px;
+  }
+  .result-actions {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-star {
+    animation: none;
+  }
+  .arcade-start,
+  .recipe-tokens > button {
+    transition: none;
+  }
+}
+.recipe-tokens .dish-art {
+  position: static;
+  inset: auto;
+  transform: none;
+  flex-shrink: 0;
+}
+
+.ranking-note {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #87633d;
+}
+
+/* School identity is centered independently of the two side controls. */
+.app .site-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 28px;
+}
+.app:not(.view-game) .site-header {
+  height: 116px;
+}
+.site-header > .brand {
+  justify-self: start;
+}
+.site-header > .header-actions {
+  justify-self: end;
+}
+.school-sign {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  text-align: center;
+}
+.school-sign strong {
+  font:
+    600 clamp(28px, 2.6vw, 40px) / 1.1 Outfit,
+    sans-serif;
+  letter-spacing: -1.1px;
+  white-space: nowrap;
+}
+.school-sign strong > span {
+  font-weight: 400;
+}
+.school-location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2.8px;
+  text-transform: uppercase;
+  color: #f4aa5e;
+}
+.school-location i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.view-game .school-location {
+  color: #667d56;
+}
+.arcade-menu {
+  min-height: calc(100dvh - 170px);
+}
+@media (max-width: 1100px) {
+  .app .site-header {
+    column-gap: 18px;
+  }
+  .school-sign {
+    padding-inline: 0;
+  }
+}
+@media (max-width: 760px) {
+  .app:not(.view-game) .site-header {
+    grid-template-columns: 1fr auto;
+    height: auto;
+    padding-block: 18px 20px;
+    row-gap: 18px;
+  }
+  .app:not(.view-game) .school-sign {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 17px 0 0;
+    border-top: 1px solid #ffffff16;
+    gap: 9px;
+  }
+  .school-sign strong {
+    font-size: 30px;
+    letter-spacing: -0.7px;
+  }
+  .school-location {
+    font-size: 9px;
+    letter-spacing: 2.4px;
+  }
+  .view-game .site-header {
+    display: flex;
+  }
+  .view-game .school-sign {
+    display: none;
+  }
+  .arcade-menu {
+    min-height: auto;
+  }
+}

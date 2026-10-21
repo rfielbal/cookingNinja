@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.certs/
+*.pem
+*.key
+*.log
+playwright-report/
+test-results/
+.playwright-cli/
+output/playwright/
+.DS_Store
+
+# Scores propres à chaque édition du stand
+data/
