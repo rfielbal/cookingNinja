@@ -4,31 +4,35 @@ Description du projet pour la démonstration BTS SIO du Lycée Guy Mollet, à Ar
 
 ## Répartition des responsabilités
 
-| Fichier                              | Responsabilité                                                                         |
-| ------------------------------------ | -------------------------------------------------------------------------------------- |
-| `src/main.tsx`                       | Charge l’écran correspondant à l’URL                                                   |
-| `src/App.tsx`                        | Interface PC, orchestration du moteur, de la scène et du réseau                        |
-| `src/Controller.tsx`                 | Manette mobile : connexion, calibration, choix de commande/lame et commandes de partie |
-| `src/motion.ts`                      | Transformation des mesures en visée relative, coupe et énergie de mélange              |
-| `src/touch.ts`                       | Segments tactiles, gestes brefs, début explicite de coupe et énergie de mélange        |
-| `src/net.ts`                         | Connexion WebSocket du PC et suivi du téléphone associé                                |
-| `shared/protocol.ts`                 | Types du protocole et validation des messages à l’exécution                            |
-| `shared/blades.ts`                   | Identifiants, noms, couleurs et halos des trois lames ; validation partagée            |
-| `src/components/BladePicker.tsx`     | Sélection de lame dans l’interface PC                                                  |
-| `server/relay.ts`                    | Salons, rôles et transmission WebSocket                                                |
-| `src/game/engine.ts`                 | Règles, temps, score, cœurs, phases et ingrédients actifs                              |
-| `src/game/events.ts`                 | Types et constantes des objets spéciaux, rushs et ralentissement                       |
-| `src/game/recipes.ts`                | Recettes, objectifs et ingrédients pièges                                              |
-| `src/game/Scene.ts`                  | WebGL, trajectoires, collision lame/aliment et effets                                  |
-| `src/game/SceneOverlay.ts`           | Anneaux transitoires de coupe et flèches autour du bol                                 |
-| `src/game/food.ts`                   | Géométries et matériaux procéduraux mutualisés                                         |
-| `src/game/audio.ts`                  | Bruitages de cuisine, événements et ambiance Web Audio côté PC                         |
-| `src/dojo.css`                       | Palette vert foncé et animations communes aux écrans PC                                |
-| `server/index.ts`                    | Serveur HTTP(S), configuration, Vite ou fichiers de production                         |
-| `server/stand-api.ts`                | API des parties et du classement du stand                                              |
-| `server/stand-domain.ts`             | Validation du pseudonyme, du résultat et de sa plausibilité                            |
-| `server/stand-store.ts`              | Persistance JSON locale des résultats                                                  |
-| `src/Atelier.tsx`, `src/atelier.css` | Parcours pédagogique indépendant du jeu                                                |
+| Fichier                                   | Responsabilité                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/main.tsx`                            | Charge l’écran correspondant à l’URL                                                   |
+| `src/App.tsx`                             | Interface PC, orchestration du moteur, de la scène et du réseau                        |
+| `src/Controller.tsx`                      | Manette mobile : connexion, calibration, choix de commande/lame et commandes de partie |
+| `src/motion.ts`                           | Transformation des mesures en visée relative, coupe et énergie de mélange              |
+| `src/touch.ts`                            | Segments tactiles, gestes brefs, début explicite de coupe et énergie de mélange        |
+| `src/net.ts`                              | Connexion WebSocket du PC et suivi du téléphone associé                                |
+| `src/connectionDiagnostic.ts`             | Rapports de connexion issus des états observés et choix d’adresse du contrôleur        |
+| `src/components/ConnectionDiagnostic.tsx` | Affichage compact du diagnostic et détails repliables                                  |
+| `shared/protocol.ts`                      | Types du protocole et validation des messages à l’exécution                            |
+| `shared/blades.ts`                        | Identifiants, noms, couleurs et halos des trois lames ; validation partagée            |
+| `src/components/BladePicker.tsx`          | Sélection de lame dans l’interface PC                                                  |
+| `src/components/PracticeRange.tsx`        | Essai facultatif de deux ingrédients et d’un piège de la recette choisie               |
+| `src/components/ResultDiscovery.tsx`      | Lien facultatif du résultat vers la découverte pédagogique dans un nouvel onglet       |
+| `server/relay.ts`                         | Salons, rôles et transmission WebSocket                                                |
+| `src/game/engine.ts`                      | Règles, temps, score, cœurs, phases et ingrédients actifs                              |
+| `src/game/events.ts`                      | Types et constantes des objets spéciaux, rushs et ralentissement                       |
+| `src/game/recipes.ts`                     | Recettes, objectifs et ingrédients pièges                                              |
+| `src/game/Scene.ts`                       | WebGL, trajectoires, collision lame/aliment et effets                                  |
+| `src/game/SceneOverlay.ts`                | Anneaux transitoires de coupe et flèches autour du bol                                 |
+| `src/game/food.ts`                        | Géométries et matériaux procéduraux mutualisés                                         |
+| `src/game/audio.ts`                       | Bruitages de cuisine, événements et ambiance Web Audio côté PC                         |
+| `src/dojo.css`                            | Palette vert foncé et animations communes aux écrans PC                                |
+| `server/index.ts`                         | Serveur HTTP(S), configuration, Vite ou fichiers de production                         |
+| `server/stand-api.ts`                     | API des parties et du classement du stand                                              |
+| `server/stand-domain.ts`                  | Validation du pseudonyme, du résultat et de sa plausibilité                            |
+| `server/stand-store.ts`                   | Persistance JSON locale des résultats                                                  |
+| `src/Atelier.tsx`, `src/atelier.css`      | Parcours pédagogique indépendant du jeu                                                |
 
 ## Le trajet réel d’une coupe
 
@@ -54,9 +58,9 @@ Téléphone
                                                        Interface React
 ```
 
-Le trajet inverse existe aussi : `GameEngine` demande l’apparition d’un aliment à la scène et `App.tsx` relaie l’état de partie vers le téléphone. Le serveur WebSocket ne calcule ni trajectoire ni collision ni score. La 3D identifie une coupe ; le moteur décide si l’aliment appartient à la recette. Cette séparation permet de tester les règles sans navigateur ou carte graphique.
+Le trajet inverse existe aussi : `GameEngine` demande l’apparition d’un aliment à la scène et `App.tsx` relaie l’état de partie vers le téléphone. Le serveur WebSocket ne calcule ni trajectoire ni collision ni score. La 3D identifie un objet traversé ; le moteur accepte ou refuse le coup selon l’état, la recette et les pouvoirs. Cette séparation permet de tester les règles sans navigateur ou carte graphique.
 
-Les coordonnées `x` et `y` sont normalisées entre 0 et 1 dans la zone de jeu. La scène transforme le segment en pixels pour tester la distance au centre projeté de chaque aliment, puis demande confirmation par `onHit(id, kind)`. Le moteur retire l’identifiant de sa liste active lorsqu’il accepte le coup. La scène ne produit les éclats et ne retire l’objet qu’après cette confirmation, tant que la partie continue : un autre objet traversé après une bombe fatale ne doit pas afficher un bonus refusé par le moteur. Une même coupe ne doit pas attribuer deux fois les points du même objet.
+Les coordonnées `x` et `y` sont normalisées entre 0 et 1 dans la zone de jeu. La scène transforme le segment en pixels pour tester la distance au centre projeté de chaque aliment, puis demande confirmation par `onHit(id, kind)`. Le moteur consomme normalement l’identifiant accepté ; l’ingrédient brillant est l’exception, conservée pendant le défi `focus` puis retirée à sa fin. La scène ne produit les éclats qu’après confirmation et conserve elle aussi le brillant pour `focus-start` et `focus-cut`. Elle revérifie que la partie continue : un autre objet traversé après une bombe fatale ne doit pas afficher un bonus refusé par le moteur. Une coupe normale ne doit pas attribuer deux fois les points du même objet ; les répétitions du défi suivent leurs propres limites.
 
 Pour le tactile, `fromX` et `fromY` indiquent le début du segment réellement capturé. `App.tsx` et `PracticeRange.tsx` utilisent ce début au lieu de joindre le dernier point reçu à un nouveau geste. Le protocole n’accepte cette paire optionnelle que pour `source: 'touch'`, avec deux coordonnées comprises entre 0 et 1. Le gyroscope conserve le segment entre ses échantillons récents.
 
@@ -76,7 +80,7 @@ Le viseur local et la jauge de mouvement du contrôleur utilisent une boucle `re
 
 Le projet ne mesure pas la position absolue du téléphone dans l’espace. Il ne connaît ni ses coordonnées dans la pièce ni une trajectoire de lame physique en centimètres. La calibration, le filtrage et la sensibilité servent à rendre la **commande relative** utilisable. Les seuils doivent être confrontés à de vrais appareils ; des événements synthétiques ne prouvent ni confort ni latence matérielle.
 
-La V0.2 exige une pose stable sur au moins 360 ms et cinq mesures pour calibrer, avec des données fraîches de moins de 1,2 seconde. Une zone neutre de 0,4° et un lissage temporel de 32 ms limitent les tremblements. L’activation de la coupe combine déplacement du pointeur et vitesse sur les axes utilisés pour viser ; une rotation sur un axe sans déplacement utile ne suffit pas. Les seuils d’entrée/sortie de 85°/s et 40°/s évitent un simple basculement unique autour d’un seul seuil.
+La calibration exige une pose stable sur au moins 360 ms et cinq mesures, avec des données fraîches de moins de 1,2 seconde. Une zone neutre de 0,4° et un lissage temporel de 32 ms limitent les tremblements. L’activation de la coupe combine déplacement du pointeur et vitesse sur les axes utilisés pour viser ; une rotation sur un axe sans déplacement utile ne suffit pas. Les seuils d’entrée/sortie de 85°/s et 40°/s évitent un simple basculement unique autour d’un seul seuil.
 
 Le contrôleur cesse d’envoyer des commandes de mouvement si les mesures sont périmées et revient au centrage après interruption ou rotation d’écran. Il demande un Screen Wake Lock lorsque l’API est disponible ; un refus ou une libération reste possible. Le champ `source` distingue capteurs (`motion`) et pavé tactile (`touch`). Une fois la commande de nouveau prête, la reprise doit être demandée explicitement depuis le téléphone ou le PC.
 
@@ -102,9 +106,9 @@ Changer entre gyroscope et tactile annule le geste précédent, efface la positi
 
 ## Boucle de jeu et affichage
 
-Les phases sont `ready`, `countdown`, `playing`, `paused`, `mixing` et `result`. Les durées du moteur sont 3 secondes de décompte, 80 secondes de découpe et 8 secondes de mélange. Chaque recette exige plusieurs exemplaires de chaque ingrédient. Un aliment piège retire un cœur et une bombe en retire deux ; manquer un aliment ne retire pas de cœur. À la fin du temps, il faut la liste complète puis au moins 35 % de mélange pour gagner.
+Les phases sont `ready`, `countdown`, `playing`, `paused`, `mixing` et `result`. Les durées du moteur sont 3 secondes de décompte, 80 secondes de découpe et 8 secondes de mélange, hors pauses et défis de découpe. Chaque recette exige plusieurs exemplaires de chaque ingrédient. Le joueur commence avec trois vies : sans bouclier, un aliment piège retire un cœur et une bombe jusqu’à deux ; atteindre zéro termine la partie. Les soins ne permettent jamais de dépasser trois vies simultanées. Manquer un aliment ne retire pas de cœur. À la fin du temps, il faut la liste complète puis au moins 35 % de mélange pour gagner.
 
-`events.ts` définit `ArenaKind` (ingrédient, `shield`, `slow` ou `danger`), `ArenaEvent` (`normal`, `rush`, `slow`, `focus`) et les constantes partagées par le moteur et le classement. Deux frénésies (`rush`) couvrent les intervalles 20–30 et 50–60 secondes de découpe : cadence des ingrédients ×1,5 et vitesse de vol ×1,65. Elles ne multiplient plus les points.
+`events.ts` définit `ArenaKind` (ingrédient, `shield`, `slow`, `danger` ou `heart`), `ArenaEvent` (`normal`, `rush`, `slow`, `focus`) et les constantes partagées par le moteur et le classement. Deux frénésies (`rush`) couvrent les intervalles 20–30 et 50–60 secondes de découpe : cadence des ingrédients ×1,5 et vitesse de vol ×1,65. Elles ne multiplient pas les points dans les règles actuelles.
 
 Toutes les 8 secondes, un objet spécial supplémentaire suit le cycle étoile → bombe → sablier. L’étoile active `shieldRemaining: 10` sans points, hits ni progression de recette. Tant que le bouclier est actif, pièges et bombes retournent `blocked` : l’objet est consommé sans perte de cœur, de combo ni erreur comptée. Le sablier rapporte 100 points et 5 secondes de ralenti ; la bombe non protégée retire deux cœurs et interrompt le combo.
 
@@ -144,6 +148,8 @@ Le protocole valide les types et les bornes à l’exécution puis copie les cha
 
 Un jeton de reprise aléatoire permet au même onglet mobile de retrouver sa place ; il est conservé dans `sessionStorage`. Après déconnexion, la place est réservée temporairement pendant 30 secondes. Le message `controller:leave` la libère volontairement pour le prochain visiteur. Cette reprise suppose que le salon existe encore : elle ne survit pas à un redémarrage du processus ou à la disparition du PC hôte.
 
+`connectionDiagnostic.ts` sépare les preuves disponibles sur chaque écran. Le PC observe sa connexion au relais, l’association confirmée et l’arrivée récente de commandes ; il ne déduit pas les permissions ou la calibration du téléphone. Le contrôleur vérifie sa propre connexion, son contexte sécurisé, les mesures fraîches et le centrage, ou la disponibilité locale du tactile. `ConnectionDiagnostic` présente un résumé et des détails repliables. `PairDialog` relit `/api/config` lorsque le code ou la connexion changent et sur actualisation manuelle, traite les erreurs HTTP/QR et masque les adresses de boucle locale ainsi que les QR de salons hors ligne. Aucun de ces contrôles ne mesure la latence, ne teste Internet ou ne certifie l’accessibilité distante de l’adresse proposée.
+
 Le serveur peut servir directement HTTPS avec `HTTPS_KEY_FILE` et `HTTPS_CERT_FILE`, ou fonctionner derrière un reverse proxy/tunnel. `PUBLIC_ORIGIN` annonce l’origine externe et autorise cette origine pour les WebSockets. `npm run phone` prépare un lien HTTPS temporaire et une instance de production. Un redémarrage du tunnel demande de rescanner le QR actif. Voir `docs/salon.md` pour les choix Internet, LAN HTTPS et secours tactile.
 
 ## Classement du stand
@@ -169,7 +175,7 @@ Une finalisation identique peut être envoyée de nouveau sans créer de score s
 
 Les nouvelles parties utilisent **`stand-v0.5-hearts`**. La lecture `all-time` inclut aussi les victoires **`stand-v0.2`**, **`stand-v0.3-events`** et **`stand-v0.4-frenzy`**, sans modifier ni recalculer les fichiers historiques. Les règles de points et de survie ont changé : ces records conservés ne sont pas strictement comparables.
 
-La validation reste attachée à la version de chaque partie. Le score courant est borné par les points de combo habituels, jusqu’à deux défis de 1 500 points et le mélange. Les cœurs n’augmentent pas la borne de hits ni de points. La nouvelle version autorise jusqu’à six erreurs fatales, ou cinq si le joueur survit, grâce aux trois soins ; les versions précédentes gardent leurs anciennes limites. Le validateur contrôle aussi le temps minimal nécessaire pour obtenir les soins indispensables au nombre d’erreurs déclaré. Ces contrôles restent des bornes de plausibilité, sans rejeu des mouvements.
+La validation reste attachée à la version de chaque partie. Le score courant est borné par les points de combo habituels, jusqu’à deux défis de 1 500 points et le mélange. Les cœurs n’augmentent pas la borne de hits ni de points. Avec les trois soins, la version actuelle permet jusqu’à six erreurs au total si la dernière épuise les vies, ou cinq si le joueur survit ; une bombe coûte jusqu’à deux vies mais compte pour une seule erreur. Les versions précédentes gardent leurs anciennes limites. Le validateur contrôle aussi le temps minimal nécessaire pour obtenir les soins indispensables au nombre d’erreurs déclaré. Ces contrôles restent des bornes de plausibilité, sans rejeu des mouvements.
 
 Une partie qui change de commande, ou dont la source n’est pas identifiée, passe en partie libre : `App.tsx` n’envoie pas sa finalisation, et son enregistrement de départ peut rester sans résultat. Cette éligibilité est gérée par le PC, pas déduite des mouvements par le serveur. Les entrées classées sont triées par score décroissant, meilleur combo décroissant, date de fin croissante puis identifiant. La limite API par défaut est 20, configurable entre 1 et 100 ; elle ne tronque pas le calcul du rang de la partie recherchée. Le pseudonyme normalisé est limité à 2–20 caractères autorisés. Les résultats vérifient notamment les bornes de score, le nombre de coupes, la cohérence des cœurs et une durée plausible depuis la création de la partie.
 
@@ -178,6 +184,12 @@ Les écritures exigent une connexion de boucle locale, un en-tête `Host` local 
 Les mutations sont séquencées dans le processus. Le fichier est écrit temporairement, synchronisé puis renommé pour remplacer le document, avec des permissions de fichier `0600`. Le stockage refuse de dépasser 10 000 parties. Un fichier de données illisible est conservé et bloque le démarrage au lieu d’être silencieusement remplacé. Ce stockage attend un seul processus par fichier et ne fournit pas une coordination multi-instance. Garder des sauvegardes distinctes ; le remplacement atomique n’est pas un historique de restauration.
 
 Aucun compte, contact ou formulaire email n’est prévu. Chaque résultat conserve son pseudonyme, sa recette, sa commande et sa version de règles, même lorsque les tableaux réunissent ces catégories. Les mesures brutes de capteurs ne sont pas enregistrées comme historique du joueur.
+
+## Découverte après la partie et essai guidé
+
+`ResultDiscovery` est un lien facultatif sans état de jeu : il ouvre `/atelier#atelier-decouverte` dans un nouvel onglet, sans remplacer l’écran du résultat. Le début de l’atelier propose un parcours d’environ trente secondes : geste et capteurs → message validé par le relais → collision de la scène confirmée par le moteur. Les liens pointent vers les fichiers du [dépôt réel](https://github.com/rfielbal/cookingNinja). Les nombres d’exemple sont explicitement synthétiques, pas une capture des gestes du visiteur. La suite conserve les cinq responsabilités détaillées, les extraits de code et la simulation de calibration utilisant le vrai `MotionTracker` avec des angles fabriqués.
+
+Avant la partie, `PracticeRange` propose un essai facultatif avec deux ingrédients de la recette à couper, puis un piège à laisser traverser l’écran. Couper ce piège recommence seulement son passage après un retour explicatif. L’exercice n’ajoute aucun point et ne retire aucune vie à la partie ; il peut être passé. Cette découverte des règles complète la calibration, elle ne la remplace pas.
 
 ## Vérifier sans confondre les preuves
 

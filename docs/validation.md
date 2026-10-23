@@ -1,3 +1,30 @@
+# Tutoriel, diagnostic et découverte du projet — 23 octobre 2026
+
+Les essais utilisent `/tmp/cookingninja-tutorial-oct23-qa`, séparé des données du stand. Les règles de score, le suivi tactile et le traitement des gestes gyroscopiques ne changent pas.
+
+## Vérifications automatisées
+
+- **136 tests réussis**, `npm run typecheck`, `npm run build` et `npm run format:check` réussis.
+- Dix nouveaux tests du tutoriel : ingrédients propres à chaque recette, deux coupes puis évitement, erreur et nouvel essai du piège, suspension, absence de pont entre deux touchers, gestes stationnaires, mesures périmées, changement de commande, redimensionnement et taille de collision.
+- Huit nouveaux tests du diagnostic : sélection de l’adresse courante, refus de localhost et des variantes loopback, configuration invalide, distinction entre association et commandes reçues, perte de connexion, capteurs périmés, centrage et repli tactile en HTTP.
+
+## Parcours navigateur
+
+- Deux contextes Chromium reliés par de vrais WebSockets, avec une manette en 390 × 844 : appairage, choix du tactile et entraînement sur le burger. Les déplacements du pointeur passent par les gestionnaires du pavé, le suivi tactile et le relais. Pain et tomate coupés, poisson coupé volontairement puis laissé passer au nouvel essai ; les trois vies et le score nul restent inchangés.
+- Pendant le passage du piège, ouverture du diagnostic PC : la progression reste à `0,09805882352941858` pendant 3,8 secondes. Fermeture du dialogue, reprise du passage et réussite du tutoriel. Le lancement depuis la manette démarre ensuite le compte à rebours et retire le tutoriel.
+- Ingrédient initial adapté aux trois recettes contrôlé : pain, tortilla et farine. Rendu inspecté sur PC à 1440 × 1000 et en 390 × 844 ; aucun débordement horizontal constaté sur le tutoriel ou la manette dans ces formats.
+- Sur la manette, diagnostic tactile prêt et distinction entre le contexte sécurisé de localhost et une vraie adresse HTTPS vérifiés. Avec des événements `DeviceOrientationEvent` **synthétiques**, la calibration passe à « Gyroscope prêt », puis l’arrêt des événements fait disparaître cet état ; l’action de réactivation apparaît et le retour au tactile reste possible. Ce contrôle ne sollicite aucun capteur physique.
+- Dans un composant d’appairage isolé, avec configuration HTTP **simulée** : QR, lien et code masqués lorsque le serveur est hors ligne, adresse manuelle abandonnée lors d’une nouvelle salle, adresse localhost refusée et réponse HTTP 503 expliquée sans QR.
+- L’écran de défaite a été obtenu en forçant des dégâts dans le moteur du navigateur pour vérifier le lien de découverte. Cet état artificiel est incohérent avec les statistiques d’une partie réelle : le serveur refuse son enregistrement en HTTP 400, comme attendu. Le lien ouvre `/atelier#atelier-decouverte` dans un nouvel onglet et conserve le texte du résultat d’origine. Cet essai ne valide ni une victoire complète ni l’enregistrement d’un score réel.
+- Atelier inspecté sur écran large et en 390 × 844 : trois étapes lisibles, liens vers les vrais fichiers et exemple de message clairement synthétique. Les cartes de découverte passent sur une colonne sur petit écran.
+- Le build de production déjà servi sur **5174** répond en HTTP 200 ; QR, diagnostic et trois cartes de découverte chargés dans un contexte neuf, sans `pageerror` observé. Aucun redémarrage ni lancement de partie classée effectué pour ce contrôle.
+
+## Portée
+
+Les captures restent dans `output/playwright/`, hors du dépôt. Ces vérifications couvrent le code et Chromium sur ce Mac, avec des interactions et des échanges réseau locaux. Elles ne mesurent pas la latence, les capteurs, Safari ou le confort d’un téléphone physique. L’accessibilité du tunnel depuis le réseau d’un visiteur n’a pas été revalidée pendant cette évolution.
+
+---
+
 # Activation audio et quatre classements — 20 octobre 2026
 
 Les tests utilisent `/tmp/cookingninja-audio-boards-qa`. Aucun score de démonstration n’a été ajouté aux données du stand.

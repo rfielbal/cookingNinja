@@ -1,0 +1,278 @@
+.ninja-practice {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff5df;
+  background: radial-gradient(ellipse at 50% 54%, #315f46 0, #123e31 48%, #072b24 100%);
+  container: ninja-practice / size;
+}
+.ninja-practice-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ninja-practice-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ninja-practice-heading {
+  position: absolute;
+  top: clamp(14px, 4cqh, 28px);
+  left: 16px;
+  right: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+.ninja-practice-eyebrow {
+  color: #c3d8bf;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.ninja-practice-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3cqw, 28px);
+  margin: 13px 0 17px;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: #c0d1bf;
+}
+.ninja-practice-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ninja-practice-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #ffffff0b;
+  box-shadow: inset 0 0 0 1px #c3deca33;
+  font-size: 10px;
+}
+.ninja-practice-steps .is-current {
+  color: #ffd097;
+}
+.ninja-practice-steps .is-current > span {
+  background: #ffd097;
+  color: #153c2b;
+  box-shadow: none;
+}
+.ninja-practice-steps .is-done {
+  color: #b9e4be;
+}
+.ninja-practice-steps .is-done > span {
+  background: #b9e4be;
+  color: #153c2b;
+  box-shadow: none;
+}
+.ninja-practice-heading h2 {
+  color: #fff5df;
+  font-size: clamp(22px, 4.8cqw, 36px);
+  line-height: 1.12;
+  font-weight: 600;
+}
+.ninja-practice-heading [role='status'] > p {
+  margin: 8px auto 0;
+  max-width: 480px;
+  color: #cee0c8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ninja-practice-heading .is-mistake h2 {
+  color: #ffbbb1;
+}
+.ninja-practice-pause {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  transform: translate(-50%, -50%);
+  width: min(82%, 350px);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #d2e3d440;
+  border-radius: 17px;
+  padding: 18px;
+  background: #092b24f5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ninja-practice-pause svg {
+  flex-shrink: 0;
+  color: #ffd097;
+}
+.ninja-practice-finish {
+  position: absolute;
+  top: 53%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: #ffd097;
+}
+.ninja-practice-finish > svg:nth-child(2) {
+  box-sizing: content-box;
+  padding: 19px;
+  color: #173e2b;
+  background: #b9e4be;
+  border-radius: 50%;
+}
+.ninja-practice-reticle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--blade-color, #ffb45f);
+  border-radius: 50%;
+  background: #ffffff4d;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.ninja-practice-reticle::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: #fff7e3;
+}
+.ninja-practice-reticle.is-cutting {
+  box-shadow: 0 0 0 5px #ffe8c51c;
+}
+.ninja-practice-bottom {
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  bottom: clamp(12px, 3.4cqh, 26px);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.ninja-practice-hint {
+  color: #d4e2cc;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.ninja-practice-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+.ninja-practice-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 43px;
+  border-radius: 12px;
+  padding: 10px 17px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ninja-practice-back {
+  background: transparent;
+  color: #d1e1c9;
+}
+.ninja-practice-start {
+  background: #e9f2df14;
+  box-shadow: inset 0 0 0 1px #d6e7d44d;
+  color: #fff5df;
+}
+.ninja-practice-start.is-complete {
+  background: #ffb76d;
+  box-shadow: none;
+  color: #203d2c;
+}
+.ninja-practice-safe {
+  color: #b6cbb6;
+  font-size: 10px;
+}
+.ninja-practice-passage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #d8e4cb;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  min-height: 17px;
+}
+.ninja-practice-passage progress {
+  display: block;
+  width: 95px;
+  height: 5px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #ffffff1a;
+  accent-color: #b9e4be;
+}
+.ninja-practice-passage progress::-webkit-progress-bar {
+  background: #ffffff1a;
+}
+.ninja-practice-passage progress::-webkit-progress-value {
+  background: #b9e4be;
+}
+.ninja-practice-passage progress::-moz-progress-bar {
+  background: #b9e4be;
+}
+@container ninja-practice (max-width: 400px) {
+  .ninja-practice-heading {
+    left: 12px;
+    right: 12px;
+  }
+  .ninja-practice-heading [role='status'] > p {
+    font-size: 11px;
+    max-width: 270px;
+  }
+  .ninja-practice-hint {
+    max-width: 270px;
+    font-size: 11px;
+  }
+}
+@container ninja-practice (max-height: 410px) {
+  .ninja-practice-heading {
+    top: 10px;
+  }
+  .ninja-practice-steps {
+    margin: 8px 0;
+  }
+  .ninja-practice-heading h2 {
+    font-size: 22px;
+  }
+  .ninja-practice-heading [role='status'] > p {
+    margin-top: 5px;
+    font-size: 11px;
+  }
+  .ninja-practice-bottom {
+    gap: 6px;
+    bottom: 10px;
+  }
+  .ninja-practice-actions button {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+  .ninja-practice-safe {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ninja-practice * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

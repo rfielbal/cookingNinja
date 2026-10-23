@@ -1,0 +1,181 @@
+.connection-diagnostic {
+  flex-shrink: 0;
+  border: 1px solid #d7dfcd;
+  border-radius: 12px;
+  background: #f5f6ed;
+  color: #344b35;
+  margin: 12px 0;
+  font-size: 12px;
+  text-align: left;
+}
+.connection-diagnostic > summary {
+  min-height: 40px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  text-align: left;
+}
+.connection-diagnostic > summary::-webkit-details-marker {
+  display: none;
+}
+.connection-diagnostic > summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.connection-check-state {
+  white-space: nowrap;
+  font-size: 10px;
+  color: #6b705a;
+}
+.connection-check-state.is-ok,
+.connection-diagnostic li.is-ok .connection-check-icon {
+  color: #2a6a42;
+}
+.connection-check-state.is-blocked,
+.connection-diagnostic li.is-blocked .connection-check-icon {
+  color: #9a462a;
+}
+.connection-diagnostic-body {
+  padding: 3px 13px 13px;
+}
+.connection-diagnostic-body > strong {
+  font-size: 13px;
+}
+.connection-diagnostic-body > p {
+  margin: 6px 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.connection-diagnostic-body ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.connection-diagnostic-body li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 0;
+  border-top: 1px solid #e1e6d8;
+}
+.connection-check-icon {
+  padding-top: 2px;
+  color: #74775f;
+  flex-shrink: 0;
+}
+.connection-diagnostic-body li b {
+  display: block;
+  font-weight: 650;
+  font-size: 11px;
+}
+.connection-diagnostic-body li div > span {
+  display: block;
+  color: #62705c;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.connection-diagnostic-action {
+  min-height: 40px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  background: #244e37;
+  color: #fffbed;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.connection-diagnostic :focus-visible {
+  outline: 3px solid #d0783c;
+  outline-offset: 3px;
+}
+.pair-content .connection-diagnostic {
+  margin: 16px 0 0;
+  color: #344b35;
+}
+.pair-content .connection-diagnostic > summary {
+  padding: 10px 12px;
+  text-align: left;
+}
+.pair-content .pair-status-message {
+  color: #506349;
+  line-height: 1.5;
+}
+.pair-status-message strong {
+  display: block;
+  color: #274d35;
+  margin-bottom: 5px;
+}
+.pair-status-message.is-blocked strong {
+  color: #9a462a;
+}
+.pair-qr-state {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.5;
+}
+.pair-diagnostic-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.pair-link-error {
+  color: #9a462a;
+  display: block;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.pair-content .pair-address-details {
+  margin-top: 12px;
+}
+.cn-controller .connection-diagnostic.is-compact {
+  margin: 3px 0;
+  border: 0;
+  background: transparent;
+}
+.cn-controller .connection-diagnostic.is-compact > summary {
+  min-height: 26px;
+  padding: 3px 4px;
+  font-size: 10px;
+}
+.cn-controller .connection-diagnostic.is-compact[open] {
+  position: absolute;
+  z-index: 45;
+  top: 28px;
+  left: 0;
+  right: 0;
+  border: 1px solid #bdcbb3;
+  background: #f5f6ed;
+  max-height: min(440px, 65dvh);
+  overflow-y: auto;
+}
+.cn-controller .connection-diagnostic.is-compact[open] > summary {
+  min-height: 40px;
+  padding: 10px 12px;
+}
+.cn-controller .connection-diagnostic.is-compact[open] + .cn-blade-picker {
+  margin-top: 32px;
+}
+@media (max-width: 370px) {
+  .connection-diagnostic > summary {
+    gap: 5px;
+  }
+  .connection-diagnostic > summary > span {
+    gap: 4px;
+  }
+}

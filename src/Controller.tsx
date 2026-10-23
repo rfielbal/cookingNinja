@@ -34,6 +34,7 @@ import { clamp, MotionTracker, type MotionSample } from './motion';
 import { TouchTracker } from './touch';
 import type { GamePhase, GameStateMessage } from '../shared/protocol';
 import { BLADES, DEFAULT_BLADE, type BladeId } from '../shared/blades';
+import { PhoneConnectionDiagnostic } from './components/ConnectionDiagnostic';
 import './controller.css';
 
 type Connection = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error';
@@ -88,6 +89,7 @@ export default function Controller() {
   const [room, setRoom] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [connection, setConnection] = useState<Connection>('idle');
+  const [relayOpen, setRelayOpen] = useState(false);
   const [connectionError, setConnectionError] = useState('');
   const [mode, setMode] = useState<Mode>('setup');
   const [sensorError, setSensorError] = useState('');
@@ -124,6 +126,7 @@ export default function Controller() {
   modeRef.current = mode;
   connectedRef.current = connection === 'connected';
   gameRef.current = game;
+  const readSensorsFresh = useCallback(() => tracker.current.isFresh(performance.now()), []);
 
   const clearPendingAction = useCallback(() => {
     pendingActionRef.current = null;
@@ -173,6 +176,7 @@ export default function Controller() {
     const connect = () => {
       if (disposed) return;
       connectedRef.current = false;
+      setRelayOpen(false);
       awaitingHostSettings = false;
       clearPendingAction();
       setActionNotice('');
@@ -184,8 +188,10 @@ export default function Controller() {
       );
       ws.current = socket;
       socket.onopen = () => {
-        if (!disposed)
+        if (!disposed) {
+          setRelayOpen(true);
           socket?.send(JSON.stringify({ type: 'controller:join', code: room, resumeToken }));
+        }
       };
       socket.onmessage = (event) => {
         if (disposed) return;
@@ -302,7 +308,9 @@ export default function Controller() {
         }
       };
       socket.onclose = (event) => {
-        if (disposed || terminalError) return;
+        if (disposed) return;
+        setRelayOpen(false);
+        if (terminalError) return;
         connectedRef.current = false;
         clearPendingAction();
         if (event.code === 4001) {
@@ -324,7 +332,10 @@ export default function Controller() {
         setConnectionError('Connexion interrompue. Nous essayons de retrouver votre cuisine…');
         retry = setTimeout(connect, Math.min(1000 * 2 ** (retries - 1), 8000));
       };
-      socket.onerror = () => socket?.close();
+      socket.onerror = () => {
+        if (!disposed) setRelayOpen(false);
+        socket?.close();
+      };
     };
     connect();
     return () => {
@@ -761,6 +772,7 @@ export default function Controller() {
     }
     setRoom(null);
     setConnection('idle');
+    setRelayOpen(false);
     setConnectionError('');
     setMode('setup');
     connectedRef.current = false;
@@ -1007,6 +1019,27 @@ export default function Controller() {
               </span>
             </div>
 
+            <PhoneConnectionDiagnostic
+              relayOpen={relayOpen}
+              associated={connection === 'connected'}
+              connectionError={connectionError}
+              secureContext={window.isSecureContext}
+              https={location.protocol === 'https:'}
+              hidden={hidden}
+              mode={mode}
+              readFresh={readSensorsFresh}
+              hasOrientation={sensorStatus.orientation}
+              sensorError={sensorError}
+              calibrating={calibrationRequested}
+              compact={isActive && connection === 'connected'}
+              onAction={(action) => {
+                if (action === 'retry') setAttempt((value) => value + 1);
+                else if (action === 'touch') useTouch();
+                else if (action === 'calibrate') calibrate();
+                else void activateSensors();
+              }}
+            />
+
             {connection !== 'connected' ? (
               <section className="cn-status-card" aria-live="polite">
                 {connection === 'error' ? (
@@ -1141,13 +1174,6 @@ export default function Controller() {
                             ? 'Inclinez doucement le téléphone pour vérifier les capteurs.'
                             : 'Autorisez les capteurs de mouvement, puis centrez votre téléphone.'}
                       </p>
-                      {sensorStatus.orientation && (
-                        <div className="cn-sensor-status">
-                          <Check size={12} />
-                          Orientation reçue<span>·</span>
-                          {sensorStatus.gyroscope ? 'Gyroscope reçu' : 'Rotation estimée'}
-                        </div>
-                      )}
                       {sensorError && (
                         <p className="cn-inline-error" role="alert">
                           {sensorError}

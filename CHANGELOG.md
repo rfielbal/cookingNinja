@@ -2,6 +2,14 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 23 octobre 2026 — Prise en main et découverte du projet
+
+- Le tutoriel utilise les vrais modèles de la recette : deux ingrédients à couper, puis un piège à laisser passer. Une erreur fait recommencer seulement le passage du piège, sans toucher aux vies ni au score. L’essai se suspend lorsque la commande est indisponible ou qu’un dialogue masque le jeu.
+- Le diagnostic distingue la connexion au serveur, l’association du téléphone et les commandes reçues. Sur le téléphone, il précise le contexte sécurisé, la fraîcheur des capteurs et le centrage, avec une action adaptée et un accès au tactile.
+- Le QR est masqué pendant une déconnexion. Les erreurs de configuration sont expliquées ; le lien est actualisable et les adresses locales inutilisables depuis un autre appareil sont refusées.
+- Après la partie, un lien ouvre une découverte du trajet du geste dans un nouvel onglet, en conservant le résultat. L’atelier relie les trois étapes aux fichiers du dépôt.
+- Les explications de collision, de bouclier, de soins et de classement sont remises en accord avec les règles actuelles.
+
 ## 21 octobre 2026 — État initial publié sur GitHub
 
 - Publication du jeu dans son état actuel, avec son code, ses tests et ses guides d’installation, d’architecture et de préparation du salon.

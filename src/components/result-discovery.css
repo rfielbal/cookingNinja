@@ -1,0 +1,43 @@
+.result-discovery {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 480px;
+  margin: 18px 0 0;
+  padding: 12px 15px;
+  border: 1px solid #abc49a45;
+  border-radius: 12px;
+  background: #244934;
+  color: #f5f3e6;
+  text-align: left;
+  text-decoration: none;
+}
+.result-discovery > svg {
+  flex-shrink: 0;
+  color: #b9d7a4;
+}
+.result-discovery > svg:last-child {
+  margin-left: auto;
+}
+.result-discovery > span {
+  display: grid;
+  gap: 4px;
+}
+.result-discovery strong {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.result-discovery small {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #c5d5b9;
+}
+.result-discovery:hover {
+  border-color: #b9d7a4;
+  background: #2c553d;
+}
+.result-discovery:focus-visible {
+  outline: 3px solid #ffb45f;
+  outline-offset: 4px;
+}

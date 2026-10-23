@@ -5,15 +5,16 @@ Un jeu de cuisine en 3D dans le navigateur : le téléphone devient une manette 
 ## Version salon
 
 - Accueil interactif et sélection de recette avec aperçu 3D.
-- Calibration guidée, viseur visible, trois cibles d’essai avant le chronomètre.
+- Calibration guidée, viseur visible et essai facultatif avant le chronomètre : couper deux ingrédients de la recette, puis laisser passer un piège.
 - Après le choix de la recette et du pseudo sur le PC, lancement, pause et reprise depuis le téléphone.
+- Diagnostic compact de connexion : relais, téléphone associé et commandes récentes côté PC ; contexte sécurisé, capteurs et centrage vérifiés sur le téléphone. Les détails restent repliables.
 - Sélecteur **Gyroscope / Tactile** toujours accessible une fois connecté. Changer de commande pendant une partie la met en pause et la fait passer en partie libre, hors classement.
 - Trois lames cosmétiques **Zeste, Menthe et Prune**, sélectionnables sur PC ou téléphone, avec choix mémorisé dans le navigateur du PC.
 - Menu et partie dans une ambiance vert foncé : halos, motifs culinaires, animations d’entrée et célébration de victoire, avec mouvement réduit et qualité allégée.
-- Ingrédients et objets spéciaux reconnaissables par leurs modèles 3D ; étoile bouclier, sablier, bombe, frénésies et défis de découpe rythment la partie.
+- Ingrédients et objets spéciaux reconnaissables par leurs modèles 3D ; étoile bouclier, cœur de soin, sablier, bombe, frénésies et défis de découpe rythment la partie.
 - Pseudo public de 2 à 20 caractères et scores persistants sur le PC. Quatre tableaux « all time » au menu : général, burger, tacos et gâteau, toutes commandes réunies. Seules les recettes réussies sont classées.
 - Bouton **Joueur suivant** : nouveau pseudo et nouveau salon, ancien téléphone détaché.
-- Espace pédagogique **[/atelier](http://localhost:5173/atelier)** : architecture, vrais extraits de code, calibration interactive et préparation de l’oral.
+- Invitation facultative après la partie : **Comment votre geste devient une coupe ?** ouvre **[/atelier#atelier-decouverte](http://localhost:5173/atelier#atelier-decouverte)** dans un nouvel onglet, en conservant le résultat. Le parcours de trente secondes mène aux responsabilités du code, puis aux extraits, à la calibration synthétique et à la préparation de l’oral.
 
 Lire [le guide du salon et les choix réseau](docs/salon.md) et [la carte du code](docs/architecture.md).
 
@@ -77,14 +78,14 @@ Installer `cloudflared` selon sa [documentation officielle](https://developers.c
 
 4. Sur le PC, ouvrir http://localhost:5173, puis **Connecter mon téléphone**. Le QR code utilise automatiquement l’adresse HTTPS configurée.
 5. Scanner avec le téléphone, puis toucher **Entrer en cuisine**. Toucher le bouton d’activation des capteurs et autoriser l’accès. Une fois l’orientation reçue, calibrer en tenant le téléphone confortablement devant soi.
-6. Sur le PC, choisir une recette et un pseudo puis sélectionner **Téléphone** dans la préparation. **Tester mes gestes** permet de trancher trois cibles sans perdre de cœur avant de démarrer. Une fois la commande prête, le bouton **Lancer la partie** du téléphone démarre le décompte ; il devient ensuite **Mettre en pause**, puis **Reprendre la partie**. Le PC doit rester visible et sans fenêtre de dialogue ouverte.
+6. Sur le PC, choisir une recette et un pseudo puis sélectionner **Téléphone** dans la préparation. **Tester mes gestes** propose deux ingrédients de cette recette à couper, puis un piège à laisser passer. Si le piège est coupé, seul son passage recommence ; aucun score ni cœur de partie n’est affecté. Cet essai peut être passé. Une fois la commande prête, le bouton **Lancer la partie** du téléphone démarre le décompte ; il devient ensuite **Mettre en pause**, puis **Reprendre la partie**. Le PC doit rester visible et sans fenêtre de dialogue ouverte.
 7. Incliner lentement pour viser ; effectuer une courte rotation rapide pour couper. **Recentrer** replace la lame au milieu. Pendant le mélange, faire de petits cercles réguliers. Le sélecteur **Gyroscope / Tactile** reste disponible en bas du téléphone : un changement pendant la partie suspend le jeu, demande de préparer la nouvelle commande, puis permet de reprendre en partie libre.
 
 Le tunnel rend cette instance accessible via Internet et relaie le trafic par Cloudflare. Il est temporaire, à utiliser pour les essais. Fermer le processus `cloudflared` termine cette exposition. Le lancement normal (`npm run dev` ou `npm start`) ne crée pas de tunnel ; `npm run phone` le crée explicitement. Le mode production évite de partager le serveur de développement Vite. Un hébergement Node HTTPS permanent, avec prise en charge des WebSockets, rendra ce parcours plus simple pour les joueurs finaux.
 
 ### Option locale : HTTPS sur le Wi-Fi
 
-Le serveur accepte directement un certificat et sa clé. Générer un certificat contenant l’adresse IP LAN avec [mkcert](https://github.com/FiloSottile/mkcert), puis approuver son autorité sur le PC **et sur le téléphone** selon sa documentation. Ne jamais partager la clé privée de l’autorité.
+Cette option est réservée à un **téléphone de test maîtrisé**, préparé avant le salon ; ne pas demander cette installation aux visiteurs. Le serveur accepte directement un certificat et sa clé. Générer un certificat contenant l’adresse IP LAN avec [mkcert](https://github.com/FiloSottile/mkcert), puis approuver son autorité sur le PC **et sur ce téléphone de test** selon sa documentation. Ne jamais partager la clé privée de l’autorité. Pour les téléphones des visiteurs, suivre les scénarios HTTPS du [guide salon](docs/salon.md#trois-scénarios-de-connexion).
 
 ```sh
 HTTPS_KEY_FILE=.certs/local-key.pem HTTPS_CERT_FILE=.certs/local-cert.pem npm run dev
@@ -94,13 +95,16 @@ Les deux fichiers doivent exister ; leurs noms ci-dessus sont des exemples. Ouvr
 
 ### Si le téléphone ne répond pas
 
-- Vérifier HTTPS, l’autorisation de mouvement et les indicateurs **Orientation reçue / Gyroscope reçu**.
+- Lire d’abord le diagnostic dans **Connecter mon téléphone** et sur le contrôleur. **Actualiser le lien** relit l’adresse et recrée le QR ; aucun QR localhost ou de salon hors ligne n’est proposé. Une commande récemment reçue sur le PC ne prouve pas à elle seule l’état des permissions du téléphone.
+- Vérifier l’autorisation de mouvement et les lignes **Adresse, Capteurs et Centrage** du diagnostic sur le téléphone.
 - Recentrer après avoir changé de position. Régler la sensibilité si nécessaire.
 - Garder l’onglet du téléphone visible. Un retour au premier plan recale la référence.
 - En cas de déconnexion, la partie se met en pause. Le téléphone peut rejoindre à nouveau le salon tant que le PC reste connecté.
 - Après reconnexion et recentrage, reprendre explicitement depuis le téléphone ou le PC lorsque la commande est prête.
 - Après un rechargement du PC ou redémarrage serveur, scanner le nouveau code.
 - Si le gyroscope n’est pas disponible, choisir **Tactile** dans le sélecteur permanent du contrôleur. Le contrôle par la souris reste également disponible côté PC. Pour obtenir un score classé avec ce nouveau mode, le choisir avant de lancer une nouvelle partie.
+
+Ce diagnostic décrit les états observés dans chaque navigateur. Il ne mesure ni la connexion Internet du lieu ni la latence, et ne garantit pas qu’une adresse HTTPS proposée sera accessible depuis un autre appareil.
 
 ### Choisir sa lame et les effets
 
@@ -126,7 +130,7 @@ Le pavé conserve le doigt actif lorsqu’il change de dimensions ou lors du pas
 | Tacos Loco      | Tortilla, poulet, avocat, tomate, oignon | 6                       | Chocolat, poisson, fraise |
 | Choco Sensei    | Farine, œuf, chocolat, fraise            | 8                       | Piment, brocoli, poisson  |
 
-Chaque partie comporte 3 secondes de décompte, **80 secondes de découpe**, puis **8 secondes de mélange** si la liste est complète. La phase de découpe se poursuit jusqu’au bout même si la liste est déjà complète : les coupes supplémentaires rapportent des points. Un mauvais aliment coûte un cœur, une bombe en coûte deux ; perdre les trois cœurs termine la partie. Rater un ingrédient ne retire pas de cœur, mais la liste doit être remplie avant la fin. Atteindre au moins **35 %** de la jauge de mélange permet de servir le plat.
+Chaque partie commence avec trois vies et comporte 3 secondes de décompte, **80 secondes de découpe**, puis **8 secondes de mélange** si la liste est complète. La phase de découpe se poursuit jusqu’au bout même si la liste est déjà complète : les coupes supplémentaires rapportent des points. Sans bouclier, un mauvais aliment coûte un cœur et une bombe jusqu’à deux ; atteindre zéro vie termine la partie. Les soins peuvent rendre des vies en cours de jeu, toujours dans la limite de trois. Rater un ingrédient ne retire pas de cœur, mais la liste doit être remplie avant la fin. Atteindre au moins **35 %** de la jauge de mélange permet de servir le plat.
 
 | Événement ou objet                                  | Effet                                                                      |
 | --------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -175,6 +179,7 @@ server/stand-*.ts       Validation, persistance et API du classement
 src/Atelier.tsx         Présentation pédagogique séparée
 src/components/ArcadeMenu.tsx  Menu de jeu et sélection
 src/components/PracticeRange.tsx  Essai des gestes
+src/components/ResultDiscovery.tsx  Invitation facultative vers l’atelier après la partie
 src/components/BladePicker.tsx  Sélecteur de lame côté PC
 src/dojo.css            Palette commune et animations des écrans PC
 tests/                  Règles, gyroscope, classement et réseau
@@ -191,9 +196,9 @@ npm run format:check   # Vérification du formatage
 
 Les variables disponibles sont décrites dans `.env.example`. Elles doivent être exportées dans le shell ; aucun fichier `.env` n’est chargé implicitement. Le port par défaut est `5173`.
 
-## Portée : socle V0.2 et événements V0.3
+## Portée de la version actuelle
 
-Le socle V0.2 comprend trois recettes, modèles 3D procéduraux, collisions, éclats et traînées, sons désactivables, score/combos, pause, résultats, QR code, salons, validation réseau, capteurs, recentrage et contrôles de secours. Les améliorations du parcours salon ajoutent les commandes de partie depuis le téléphone, le changement explicite de mode, les trois lames et le fond de jeu animé. La tranche V0.3 ajoute les événements et objets spéciaux, les retours visuels de coupe et le suivi tactile indépendant du rendu. Le contrôleur mobile ne charge pas le moteur Three.js. Les polices sont locales, sans CDN.
+La version actuelle comprend trois recettes, modèles 3D procéduraux, collisions, éclats et traînées, sons désactivables, score/combos, pause, résultats, QR code, salons, validation réseau, capteurs, recentrage et contrôles de secours. Le parcours salon comprend les commandes de partie depuis le téléphone, le changement explicite de mode, les trois lames, l’essai guidé et la découverte pédagogique après la partie. Les règles `stand-v0.5-hearts` réunissent les frénésies, boucliers, ralentis, bombes, défis de découpe et cœurs de soin. Le contrôleur mobile ne charge pas le moteur Three.js. Les polices sont locales, sans CDN.
 
 Le gyroscope pilote une **visée relative**, pas une position physique 3D. Les aliments éclatent en particules ; il n’y a pas encore de découpe exacte du maillage en deux. Les ingrédients sont reconnaissables mais stylisés. Le mélange est une jauge de mouvement, sans simulation de pâte.
 

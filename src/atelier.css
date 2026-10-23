@@ -986,6 +986,14 @@
     flex-direction: column;
   }
 }
+@media (max-width: 600px) {
+  #atelier-decouverte .atelier-file-grid {
+    grid-template-columns: 1fr;
+  }
+  #atelier-decouverte .atelier-file-grid code {
+    font-size: 11px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .atelier-page *,
   .atelier-page *::before,

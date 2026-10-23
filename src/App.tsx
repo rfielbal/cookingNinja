@@ -42,6 +42,7 @@ import { useHost, type MotionInput } from './net';
 import { ArcadeMenu } from './components/ArcadeMenu';
 import { Leaderboard } from './components/Leaderboard';
 import { PracticeRange } from './components/PracticeRange';
+import { ResultDiscovery } from './components/ResultDiscovery';
 import { BladePicker } from './components/BladePicker';
 import { Celebration, ScoreCounter } from './components/Celebration';
 import { BLADES, DEFAULT_BLADE, isBladeId, type BladeId } from '../shared/blades';
@@ -53,7 +54,7 @@ import { PairDialog } from './components/PairDialog';
 import { Modal } from './components/Modal';
 
 type View = 'home' | 'recipes' | 'game';
-type Dialog = 'pair' | 'help' | 'settings' | 'board' | null;
+type Dialog = 'pair' | 'diagnostic' | 'help' | 'settings' | 'board' | null;
 const time = (s: number) =>
   `${Math.floor(Math.ceil(s) / 60)
     .toString()
@@ -300,6 +301,10 @@ export default function App() {
     }
   }, [view, recipe.id, lowQuality, createGame]);
   useEffect(() => {
+    // The exercise owns its own scene; keep the covered arena idle until it closes.
+    scene.current?.setPaused(practice || engine.current?.state.phase === 'paused');
+  }, [practice, state?.phase]);
+  useEffect(() => {
     let frame = 0,
       last = performance.now(),
       lastPaint = 0;
@@ -429,6 +434,7 @@ export default function App() {
     }
   }, [host.connected, mode, pause]);
   useEffect(() => {
+    // Pairing can finish automatically; a diagnostic opened deliberately stays readable.
     if (dialog === 'pair' && host.connected && phoneReady) setDialog(null);
   }, [dialog, host.connected, phoneReady]);
   const validNickname = /^[\p{L}\p{N} ._'’-]{2,20}$/u.test(nickname.trim().normalize('NFKC'));
@@ -461,9 +467,11 @@ export default function App() {
                   ? 'Vérifiez votre pseudo sur le PC.'
                   : !phoneReady
                     ? 'Préparez votre commande pour jouer.'
-                    : s?.phase === 'result'
-                      ? 'Rejouez ou choisissez une nouvelle recette sur le PC.'
-                      : '',
+                    : practice
+                      ? 'Entraînement sur le PC. Lancez quand vous êtes prêt.'
+                      : s?.phase === 'result'
+                        ? 'Rejouez ou choisissez une nouvelle recette sur le PC.'
+                        : '',
     });
   }, [
     view,
@@ -483,6 +491,7 @@ export default function App() {
     dialog,
     sceneError,
     phoneReady,
+    practice,
   ]);
   const begin = async () => {
     const game = engine.current;
@@ -531,6 +540,7 @@ export default function App() {
       return;
     }
     scene.current?.setPaused(false);
+    setPractice(false);
     engine.current?.start();
     if (engine.current) setState(engine.current.snapshot());
   };
@@ -675,7 +685,7 @@ export default function App() {
             className={`connect-button ${host.connected ? 'is-connected' : ''}`}
             onClick={() => {
               pause();
-              setDialog('pair');
+              setDialog(host.connected ? 'diagnostic' : 'pair');
             }}
           >
             <Smartphone size={17} />
@@ -1018,9 +1028,14 @@ export default function App() {
                           : 'Préparez votre téléphone'}
                       </strong>
                       {phoneSource === 'touch' ? 'Pavé tactile' : 'Gyroscope'} ·{' '}
-                      {phoneReady ? 'Prêt à jouer' : 'Calibration en cours'}
+                      {phoneReady ? 'Commandes reçues' : 'En attente de commandes'}
                     </span>
                   </div>
+                )}
+                {mode === 'phone' && host.connected && (
+                  <button className="text-button" onClick={() => setDialog('diagnostic')}>
+                    Diagnostic de connexion
+                  </button>
                 )}
                 <BladePicker value={blade} onChange={selectBlade} compact />
                 <div className="ready-rules" aria-label="Règles essentielles">
@@ -1052,8 +1067,10 @@ export default function App() {
             )}
             {state?.phase === 'ready' && practice && (
               <PracticeRange
+                recipe={recipe}
+                lowQuality={lowQuality}
                 inputRef={practiceInput}
-                ready={phoneReady && host.connected}
+                ready={phoneReady && host.connected && pageVisible && !dialog}
                 source={phoneSource}
                 busy={starting}
                 onBegin={() => void begin()}
@@ -1098,6 +1115,11 @@ export default function App() {
                 {mode === 'phone' && !host.connected && (
                   <button className="text-button" onClick={() => setDialog('pair')}>
                     Reconnecter le téléphone
+                  </button>
+                )}
+                {mode === 'phone' && host.connected && (
+                  <button className="text-button" onClick={() => setDialog('diagnostic')}>
+                    Diagnostic de connexion
                   </button>
                 )}
               </div>
@@ -1179,6 +1201,7 @@ export default function App() {
                     <Trophy size={17} /> Classement
                   </button>
                 </div>
+                <ResultDiscovery />
               </div>
             )}
           </div>
@@ -1251,13 +1274,15 @@ export default function App() {
       {dialog && (
         <Modal
           title={
-            dialog === 'pair'
-              ? 'Connecter mon téléphone'
-              : dialog === 'help'
-                ? 'Comment jouer'
-                : dialog === 'board'
-                  ? 'Classement du stand'
-                  : 'Réglages'
+            dialog === 'diagnostic'
+              ? 'Diagnostic de connexion'
+              : dialog === 'pair'
+                ? 'Connecter mon téléphone'
+                : dialog === 'help'
+                  ? 'Comment jouer'
+                  : dialog === 'board'
+                    ? 'Classement du stand'
+                    : 'Réglages'
           }
           onClose={() => setDialog(null)}
           className={dialog === 'board' ? 'leaderboard-dialog' : undefined}
@@ -1269,8 +1294,16 @@ export default function App() {
               highlightEntryId={run.current?.eligible ? run.current.id : undefined}
               refreshKey={boardRevision}
             />
-          ) : dialog === 'pair' ? (
-            <PairDialog code={host.code} connected={host.connected} online={host.online} />
+          ) : dialog === 'pair' || dialog === 'diagnostic' ? (
+            <PairDialog
+              code={host.code}
+              connected={host.connected}
+              online={host.online}
+              ready={phoneReady}
+              source={phoneSource}
+              error={host.error}
+              onClose={() => setDialog(null)}
+            />
           ) : dialog === 'help' ? (
             <div className="help-content">
               <span className="modal-symbol">

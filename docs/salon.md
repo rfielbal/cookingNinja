@@ -1,6 +1,6 @@
 # CookingNinja au salon — Lycée Guy Mollet, Arras
 
-Support de préparation pour une démonstration BTS SIO. Le visiteur utilise son propre téléphone ; l’exposant garde la maîtrise du PC et du classement. La page `/atelier` sert à expliquer le projet séparément du jeu.
+Support de préparation pour une démonstration BTS SIO. Le visiteur utilise son propre téléphone ; l’exposant garde la maîtrise du PC et du classement. Après la partie, une invitation facultative ouvre `/atelier#atelier-decouverte` dans un nouvel onglet : trente secondes pour comprendre le trajet du geste, en conservant le résultat.
 
 ## Le choix pour cette version
 
@@ -29,6 +29,8 @@ Avantages : pas de certificat à installer sur le téléphone, pas de domaine à
 
 Une fois démarré, vérifier `/api/config`, le QR et un appairage réel. `PUBLIC_ORIGIN` indique l’origine HTTPS au jeu ; cette variable ne crée pas de tunnel à elle seule.
 
+En cas de blocage, lire le diagnostic de **Connecter mon téléphone** : serveur, association, puis commandes récentes. Sur le téléphone, les détails distinguent adresse sécurisée, capteurs et centrage, ou tactile prêt. Le PC ne peut pas confirmer les permissions du téléphone à sa place. **Actualiser le lien** recharge la configuration et le QR ; ces indicateurs ne constituent ni un test Internet ni une mesure de latence.
+
 ### 2. Sans Internet : LAN HTTPS avec confiance publique
 
 **Scénario possible, non configuré automatiquement par le projet.** Il faut préparer avant le salon :
@@ -47,17 +49,19 @@ Ne pas demander aux visiteurs d’installer une autorité de certification, un p
 
 Le téléphone peut utiliser le pavé tactile sur le même réseau local en HTTP ; le PC peut toujours être joué à la souris. **Le mode capteurs ne doit pas être annoncé fonctionnel sur une simple IP LAN en HTTP.** `localhost` est une exception locale au navigateur concerné : `localhost` sur le téléphone désigne le téléphone, pas le PC. [MDN : contextes sécurisés](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts).
 
-En cas d’échec des permissions ou de capteur absent, proposer ce secours rapidement avec le sélecteur **Gyroscope / Tactile**, toujours accessible sur le téléphone connecté. Choisir le mode avant le départ pour classer la partie dans la bonne catégorie. Un changement en cours de jeu met la partie en pause : elle peut reprendre mais devient une partie libre, hors classement, même en revenant au mode initial. Pour un score classé en tactile, démarrer une nouvelle partie dans ce mode. Ne pas retarder toute la file pour un téléphone incompatible.
+En cas d’échec des permissions ou de capteur absent, proposer ce secours rapidement avec le sélecteur **Gyroscope / Tactile**, toujours accessible sur le téléphone connecté. Choisir la commande avant le départ et la conserver pendant cette partie ; les classements réunissent toutes les commandes. Un changement en cours de jeu met la partie en pause : elle peut reprendre mais devient une partie libre, hors classement, même en revenant au mode initial. Pour un score classé en tactile, démarrer une nouvelle partie dans ce mode. Ne pas retarder toute la file pour un téléphone incompatible.
 
 ## Le passage d’un visiteur
 
-Prévoir au départ **un créneau de 2 à 3 minutes**, incluant appairage, explication, jeu et relève. C’est une hypothèse d’organisation à mesurer, pas un débit constaté. La partie comporte 3 secondes de décompte, 80 secondes de découpe et, si les ingrédients sont prêts, 8 secondes de mélange.
+Prévoir au départ **un créneau de 2 à 3 minutes**, incluant appairage, explication, jeu et relève. C’est une hypothèse d’organisation à mesurer, pas un débit constaté. La partie comporte 3 secondes de décompte, 80 secondes de découpe et, si les ingrédients sont prêts, 8 secondes de mélange. Les deux défis d’ingrédients brillants peuvent ajouter jusqu’à 6 secondes en figeant le chronomètre de recette. Prévoir séparément le temps de découverte pédagogique si le visiteur souhaite rester.
 
 1. Choisir un pseudonyme de démonstration et une recette **sur le PC**, puis sélectionner **Téléphone** dans la préparation. Aucun compte ni adresse email ne sont demandés.
 2. Scanner le QR, activer les capteurs par le bouton du téléphone et attendre des mesures réelles. Une permission accordée ne prouve pas que les événements arrivent. [MDN : permissions d’orientation](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static).
-3. Effectuer **trois essais courts** : viser gauche/droite, recentrer depuis une pose confortable, puis faire une petite coupe. Adapter la sensibilité si nécessaire. Le téléphone doit rester fermement tenu ; les grands gestes ne sont pas utiles.
-4. Toucher **Lancer la partie** sur le téléphone lorsque la commande est prête. Le bouton permet ensuite de mettre en pause et de reprendre. Le PC doit rester au premier plan, sans dialogue ouvert. Jouer, puis mélanger : trois mauvaises coupes retirent les trois cœurs ; un ingrédient manqué ne retire pas de cœur. Le moteur exige la liste complète et une jauge de mélange d’au moins 35 %.
-5. Vérifier le résultat avant de quitter l’écran. Comparer les scores **par recette et par mode de contrôle**, avec la même version de règles. Détacher le téléphone précédent avant d’accueillir le suivant.
+3. Recentrer depuis une pose confortable et proposer **Tester mes gestes** : couper deux ingrédients de la recette, puis laisser passer un piège. Si le piège est coupé, seul ce passage recommence après une courte pause ; aucun score ni cœur de partie n’est affecté. L’essai est facultatif. Adapter la sensibilité si nécessaire. Le téléphone doit rester fermement tenu ; les grands gestes ne sont pas utiles.
+4. Toucher **Lancer la partie** sur le téléphone lorsque la commande est prête. Le bouton permet ensuite de mettre en pause et de reprendre. Le PC doit rester au premier plan, sans dialogue ouvert. Le joueur commence avec trois vies : sans bouclier, un piège coûte une vie et une bombe jusqu’à deux. L’étoile protège de ces dégâts pendant dix secondes de jeu actif. Jusqu’à trois cœurs peuvent apparaître si une vie manque ; les couper rend une vie, sans dépasser trois. À zéro vie, la partie se termine. Un ingrédient manqué ne retire pas de cœur. Pour gagner, remplir la recette puis atteindre au moins 35 % de la jauge de mélange.
+5. Vérifier le résultat et son enregistrement avant de quitter l’écran. Le menu présente **quatre classements historiques** : général, burger, tacos et gâteau ; le résultat montre le général et la recette jouée. Ils réunissent gyroscope, tactile et souris, sans addition des scores ni regroupement par pseudo. Les versions de règles sont conservées ; leurs scores ne sont pas strictement comparables.
+6. Proposer, sans l’imposer, **Comment votre geste devient une coupe ?** : le nouvel onglet présente capteurs/geste → message → coupe en trente secondes, puis les vrais fichiers du projet. Les valeurs illustratives sont synthétiques, pas une lecture du téléphone du visiteur. Pour poursuivre l’explication, demander au visiteur quelle étape il aimerait comprendre.
+7. Revenir à l’onglet du résultat et choisir **Joueur suivant** : nouveau pseudo et nouveau salon, ancien téléphone détaché. Accueillir le prochain visiteur.
 
 Le maintien d’écran éveillé est une aide, pas une garantie. Le système peut refuser ou libérer un Wake Lock, notamment lorsque l’onglet n’est plus visible ou selon l’état de batterie. Garder l’onglet de la manette au premier plan et prévoir la reprise/recalibration. [MDN : Screen Wake Lock](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
 
@@ -78,16 +82,19 @@ L’écriture par remplacement atomique réduit le risque de document partiellem
 ## Checklist de répétition
 
 - [ ] Exécuter types, tests, build et vérification de formatage sur la version qui sera présentée.
-- [ ] Ouvrir `/atelier` et pouvoir retrouver chaque fichier montré dans l’éditeur.
+- [ ] Depuis un résultat, ouvrir la découverte dans un nouvel onglet, retrouver le résultat intact et pouvoir montrer les fichiers correspondants.
 - [ ] Essayer au moins un iPhone et un Android disponibles, noter modèle, navigateur et résultat réellement observé.
-- [ ] Effectuer les trois essais de calibration et une partie complète pour chaque mode présenté.
+- [ ] Lire le diagnostic sur chaque écran, actualiser le lien et vérifier qu’un QR périmé ou localhost n’est pas proposé pendant une coupure.
+- [ ] Recentrer puis essayer les deux bons ingrédients et le piège ; vérifier que couper le piège fait recommencer ce passage sans perte de vie ni de score.
+- [ ] Effectuer une partie complète pour chaque commande présentée, ainsi qu’un passage qui ignore volontairement l’essai facultatif.
 - [ ] Choisir recette et pseudo sur le PC, puis lancer, mettre en pause et reprendre depuis le téléphone.
 - [ ] Basculer entre Gyroscope et Tactile : vérifier la pause, la préparation de la nouvelle commande et le statut hors classement de cette partie.
 - [ ] Choisir chaque lame sur les deux écrans, vérifier la synchronisation et la mémorisation du choix côté PC.
 - [ ] Contrôler la lisibilité des aliments sur le fond vert, le mouvement réduit et le mode de qualité allégée.
 - [ ] Vérifier retour d’arrière-plan, verrouillage écran, rotation, déconnexion et arrivée d’un nouveau téléphone.
 - [ ] Vérifier que le nouveau visiteur ne reprend pas les mouvements ou la partie du précédent.
-- [ ] Vérifier une victoire, un échec, un doublon d’envoi du même résultat et le classement de la bonne recette/mode.
+- [ ] Vérifier piège, bombe, bouclier et soin : jamais plus de trois vies, un ingrédient manqué sans dégât.
+- [ ] Vérifier une victoire, un échec, un doublon d’envoi du même résultat, les quatre tableaux au menu et les deux tableaux du résultat, toutes commandes réunies.
 - [ ] Préparer l’adresse locale du PC, le nouveau QR, la souris, les alimentations et le scénario de secours réseau.
 - [ ] Sauvegarder les résultats et vérifier le chemin effectif du fichier, surtout si plusieurs ports ou instances ont été utilisés.
 - [ ] Chronométrer plusieurs passages réels et adapter le créneau proposé.

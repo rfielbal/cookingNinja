@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,6 +20,28 @@ import {
 } from 'lucide-react';
 import { MotionTracker } from './motion';
 import './atelier.css';
+
+const repository = 'https://github.com/rfielbal/cookingNinja';
+const discoverySteps = [
+  {
+    title: '1. Votre geste devient une visée',
+    icon: Smartphone,
+    text: 'Le téléphone mesure les angles et la rotation. Le code les transforme en visée et en coupe. En tactile, il suit votre doigt.',
+    file: 'src/Controller.tsx',
+  },
+  {
+    title: '2. Un message rejoint le PC',
+    icon: Wifi,
+    text: 'Un message WebSocket contient la visée et l’intention de coupe. Le relais le vérifie, puis l’envoie au PC associé au QR.',
+    file: 'server/relay.ts',
+  },
+  {
+    title: '3. Le jeu décide de la coupe',
+    icon: Box,
+    text: 'La scène repère l’aliment traversé. Le moteur applique la recette et les pouvoirs, puis confirme le coup. Points, cœurs et effets suivent.',
+    file: 'src/game/engine.ts',
+  },
+] as const;
 
 const blocks = [
   {
@@ -67,10 +89,10 @@ const blocks = [
       'GameEngine gère les ingrédients attendus, les cœurs, le score et les phases. Il reçoit l’identifiant de l’aliment touché et décide si cette coupe est correcte.',
     input: 'Le temps écoulé, une coupe identifiée ou l’énergie de mélange.',
     output: 'Un état de partie : cœurs, compteurs, score, phase.',
-    exampleTitle: 'Un ingrédient piège retire un cœur.',
-    code: "s.hearts--;\ns.mistakes++;\ns.combo = 0;\ns.feedback = 'Oups… pas dans la recette !';\nif (!s.hearts) this.finish('hearts');",
+    exampleTitle: 'Le bouclier bloque les dégâts d’un piège.',
+    code: "if (s.shieldRemaining > 0) {\n  this.feedback('PIÈGE BLOQUÉ · Le bouclier vous protège !');\n  return 'blocked';\n}\nthis.damage(1);\nthis.feedback('Oups… pas dans la recette !');\nreturn 'bad';",
     explanation:
-      'Les règles sont indépendantes de React et de Three.js. On peut les tester sans navigateur, sans téléphone et sans carte graphique.',
+      'Sans bouclier, un piège coûte une vie et une bombe jusqu’à deux. Un cœur coupé rend une vie, sans dépasser trois ; jusqu’à trois soins peuvent apparaître. Ces règles se testent sans navigateur ni carte graphique.',
     oral: '« Je sépare les règles du rendu : changer l’apparence d’un aliment ne change pas le calcul des cœurs. »',
   },
   {
@@ -83,11 +105,11 @@ const blocks = [
     responsibility:
       'Three.js affiche les aliments et anime leurs trajectoires. La scène projette leurs positions sur l’écran, teste le passage de la lame et renvoie les identifiants touchés.',
     input: 'Les aliments à faire apparaître et le segment parcouru par la lame.',
-    output: 'Une image animée et un callback onHit(id) lorsqu’un aliment est touché.',
-    exampleTitle: 'Une coupe est retirée avant d’être signalée.',
-    code: 'if (!this.foods.delete(food.id)) continue;\nthis.burst(food, dx / Math.sqrt(lengthSq),\n  dy / Math.sqrt(lengthSq));\nthis.arena.remove(food.object);\nthis.options.onHit?.(food.id);',
+    output: 'Une image animée et une demande onHit(id, kind), confirmée par le moteur.',
+    exampleTitle: 'Le moteur confirme avant les effets de coupe.',
+    code: "const result = this.options.onHit?.(food.id, food.kind);\nif (this.disposed || this.paused || this.mode !== 'playing') break;\nif (!result || !this.foods.has(food.id)) continue;\n// … effets de coupe …\nif (result !== 'focus-start' && result !== 'focus-cut')\n  this.removeFood(food);",
     explanation:
-      'Supprimer d’abord l’identifiant empêche cette scène de compter deux fois le même aliment. Les éclats donnent l’effet de coupe ; le maillage n’est pas réellement tranché.',
+      'Cet extrait est abrégé. Un coup refusé ne crée pas d’éclats. Le moteur consomme normalement l’identifiant une seule fois ; l’ingrédient brillant reste disponible pendant son défi de trois secondes, avec des coupes espacées et un bonus borné. Le maillage n’est pas réellement tranché.',
     oral: '« La 3D sait quel aliment la lame traverse. Le moteur décide ensuite si cet aliment appartient à la recette. »',
   },
   {
@@ -142,6 +164,12 @@ export default function Atelier() {
   const [checks, setChecks] = useState<number[]>([]);
   const current = blocks[selected];
   const Icon = current.icon;
+
+  useEffect(() => {
+    // The lazy-loaded page may render after the browser first resolves the URL fragment.
+    if (location.hash === '#atelier-decouverte')
+      document.getElementById('atelier-decouverte')?.scrollIntoView({ block: 'start' });
+  }, []);
 
   function model() {
     if (!tracker.current) {
@@ -207,13 +235,14 @@ export default function Atelier() {
             <span>il y a du code.</span>
           </h1>
           <p>
-            Un espace pour comprendre CookingNinja, préparer la démonstration et expliquer les choix
-            du projet. Ouvrez le capot, étape par étape.
+            Vous venez de jouer ? Découvrez en trente secondes le trajet de votre geste, puis
+            explorez le vrai code et les choix du projet.
           </p>
           <nav aria-label="Dans l’atelier">
-            <a href="#atelier-flow">
-              Le fonctionnement <ArrowRight size={15} />
+            <a href="#atelier-decouverte">
+              Comprendre en 30 secondes <ArrowRight size={15} />
             </a>
+            <a href="#atelier-flow">Explorer le fonctionnement</a>
             <a href="#atelier-calibration">Essayer la calibration</a>
             <a href="#atelier-oral">Préparer l’oral</a>
           </nav>
@@ -223,6 +252,50 @@ export default function Atelier() {
               DU GESTE
               <br />À L’IMAGE
             </span>
+          </div>
+        </section>
+
+        <section id="atelier-decouverte" className="atelier-section">
+          <div className="atelier-section-title">
+            <div>
+              <p className="atelier-eyebrow">EN 30 SECONDES / DU GESTE À LA COUPE</p>
+              <h2>Trois étapes derrière votre geste.</h2>
+            </div>
+            <p>Votre résultat reste dans l’onglet du jeu. Cette découverte est facultative.</p>
+          </div>
+          <div className="atelier-file-grid">
+            {discoverySteps.map((step) => {
+              const StepIcon = step.icon;
+              return (
+                <div key={step.file}>
+                  <strong>
+                    {step.title} <StepIcon size={20} aria-hidden="true" />
+                  </strong>
+                  <p>{step.text}</p>
+                  <a
+                    href={`${repository}/blob/main/${step.file}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <code>{step.file} ↗</code>
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+          <div className="atelier-simulation-label">
+            <Terminal size={16} aria-hidden="true" />
+            <span>
+              Exemple synthétique : <code>x: 0.70, y: 0.40, slash: true</code>. Ces valeurs
+              illustrent le message, pas votre partie. Le téléphone n’est pas localisé dans la
+              pièce.
+            </span>
+          </div>
+          <div className="atelier-source-links">
+            <a href="#atelier-flow">Explorer les cinq rôles du projet ↓</a>
+            <a href={repository} target="_blank" rel="noopener noreferrer">
+              Voir le code réel sur GitHub ↗
+            </a>
           </div>
         </section>
 
@@ -442,9 +515,9 @@ export default function Atelier() {
             </p>
             {[
               'Scanner le QR avec un téléphone visiteur et vérifier la connexion.',
-              'Effectuer trois essais : viser, recentrer, puis couper sans grand geste.',
+              'Recentrer, puis couper deux bons ingrédients et éviter le piège de l’essai.',
               'Tester une partie complète, le mélange et une déconnexion.',
-              'Vérifier le classement pour la même recette et le même mode.',
+              'Vérifier les quatre classements au menu et les deux tableaux du résultat, toutes commandes réunies.',
               'Prévoir la souris, une alimentation et une sauvegarde des résultats.',
             ].map((label, index) => (
               <label key={label}>
@@ -501,6 +574,9 @@ export default function Atelier() {
           </div>
           <div className="atelier-source-links">
             <span>POUR VÉRIFIER</span>
+            <a href={repository} target="_blank" rel="noopener noreferrer">
+              GitHub · Code du projet ↗
+            </a>
             <a
               href="https://developer.mozilla.org/en-US/docs/Web/API/Device_orientation_events/Detecting_device_orientation"
               target="_blank"
