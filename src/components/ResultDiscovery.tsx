@@ -11,8 +11,8 @@ export function ResultDiscovery() {
     >
       <Code2 size={19} aria-hidden="true" />
       <span>
-        <strong>Comment votre geste devient une coupe ?</strong>
-        <small>À découvrir en 30 secondes · nouvel onglet</small>
+        <strong>Entrez dans les coulisses du jeu</strong>
+        <small>6 étapes animées · nouvel onglet</small>
       </span>
       <ArrowUpRight size={17} aria-hidden="true" />
     </a>

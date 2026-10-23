@@ -1,6 +1,6 @@
 # CookingNinja au salon — Lycée Guy Mollet, Arras
 
-Support de préparation pour une démonstration BTS SIO. Le visiteur utilise son propre téléphone ; l’exposant garde la maîtrise du PC et du classement. Après la partie, une invitation facultative ouvre `/atelier#atelier-decouverte` dans un nouvel onglet : trente secondes pour comprendre le trajet du geste, en conservant le résultat.
+Support de préparation pour une démonstration BTS SIO. Le visiteur utilise son propre téléphone ; l’exposant garde la maîtrise du PC et du classement. Après la partie, une invitation facultative ouvre `/atelier#atelier-decouverte` dans un nouvel onglet : un diaporama en six étapes animées pour comprendre le jeu, en conservant le résultat.
 
 ## Le choix pour cette version
 
@@ -60,7 +60,7 @@ Prévoir au départ **un créneau de 2 à 3 minutes**, incluant appairage, expli
 3. Recentrer depuis une pose confortable et proposer **Tester mes gestes** : couper deux ingrédients de la recette, puis laisser passer un piège. Si le piège est coupé, seul ce passage recommence après une courte pause ; aucun score ni cœur de partie n’est affecté. L’essai est facultatif. Adapter la sensibilité si nécessaire. Le téléphone doit rester fermement tenu ; les grands gestes ne sont pas utiles.
 4. Toucher **Lancer la partie** sur le téléphone lorsque la commande est prête. Le bouton permet ensuite de mettre en pause et de reprendre. Le PC doit rester au premier plan, sans dialogue ouvert. Le joueur commence avec trois vies : sans bouclier, un piège coûte une vie et une bombe jusqu’à deux. L’étoile protège de ces dégâts pendant dix secondes de jeu actif. Jusqu’à trois cœurs peuvent apparaître si une vie manque ; les couper rend une vie, sans dépasser trois. À zéro vie, la partie se termine. Un ingrédient manqué ne retire pas de cœur. Pour gagner, remplir la recette puis atteindre au moins 35 % de la jauge de mélange.
 5. Vérifier le résultat et son enregistrement avant de quitter l’écran. Le menu présente **quatre classements historiques** : général, burger, tacos et gâteau ; le résultat montre le général et la recette jouée. Ils réunissent gyroscope, tactile et souris, sans addition des scores ni regroupement par pseudo. Les versions de règles sont conservées ; leurs scores ne sont pas strictement comparables.
-6. Proposer, sans l’imposer, **Comment votre geste devient une coupe ?** : le nouvel onglet présente capteurs/geste → message → coupe en trente secondes, puis les vrais fichiers du projet. Les valeurs illustratives sont synthétiques, pas une lecture du téléphone du visiteur. Pour poursuivre l’explication, demander au visiteur quelle étape il aimerait comprendre.
+6. Proposer, sans l’imposer, **Entrez dans les coulisses du jeu** : six étapes présentent le geste, le relais/QR, les aliments 3D, la coupe et les règles, le mélange, puis le résultat et le classement. Laisser le visiteur avancer avec **Précédent / Suivant** ou le clavier ; ouvrir le volet de code seulement s’il souhaite aller plus loin. Les démonstrations utilisent les modèles du jeu, mais leurs mouvements et valeurs sont illustratifs, pas une lecture de son téléphone ou de sa partie. Le résultat reste dans l’onglet d’origine.
 7. Revenir à l’onglet du résultat et choisir **Joueur suivant** : nouveau pseudo et nouveau salon, ancien téléphone détaché. Accueillir le prochain visiteur.
 
 Le maintien d’écran éveillé est une aide, pas une garantie. Le système peut refuser ou libérer un Wake Lock, notamment lorsque l’onglet n’est plus visible ou selon l’état de batterie. Garder l’onglet de la manette au premier plan et prévoir la reprise/recalibration. [MDN : Screen Wake Lock](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
@@ -82,7 +82,7 @@ L’écriture par remplacement atomique réduit le risque de document partiellem
 ## Checklist de répétition
 
 - [ ] Exécuter types, tests, build et vérification de formatage sur la version qui sera présentée.
-- [ ] Depuis un résultat, ouvrir la découverte dans un nouvel onglet, retrouver le résultat intact et pouvoir montrer les fichiers correspondants.
+- [ ] Depuis un résultat, ouvrir le diaporama dans un nouvel onglet, parcourir ses six étapes avec les boutons et le clavier, ouvrir le volet de code et retrouver le résultat intact dans l’onglet d’origine.
 - [ ] Essayer au moins un iPhone et un Android disponibles, noter modèle, navigateur et résultat réellement observé.
 - [ ] Lire le diagnostic sur chaque écran, actualiser le lien et vérifier qu’un QR périmé ou localhost n’est pas proposé pendant une coupure.
 - [ ] Recentrer puis essayer les deux bons ingrédients et le piège ; vérifier que couper le piège fait recommencer ce passage sans perte de vie ni de score.

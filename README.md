@@ -14,7 +14,7 @@ Un jeu de cuisine en 3D dans le navigateur : le téléphone devient une manette 
 - Ingrédients et objets spéciaux reconnaissables par leurs modèles 3D ; étoile bouclier, cœur de soin, sablier, bombe, frénésies et défis de découpe rythment la partie.
 - Pseudo public de 2 à 20 caractères et scores persistants sur le PC. Quatre tableaux « all time » au menu : général, burger, tacos et gâteau, toutes commandes réunies. Seules les recettes réussies sont classées.
 - Bouton **Joueur suivant** : nouveau pseudo et nouveau salon, ancien téléphone détaché.
-- Invitation facultative après la partie : **Comment votre geste devient une coupe ?** ouvre **[/atelier#atelier-decouverte](http://localhost:5173/atelier#atelier-decouverte)** dans un nouvel onglet, en conservant le résultat. Le parcours de trente secondes mène aux responsabilités du code, puis aux extraits, à la calibration synthétique et à la préparation de l’oral.
+- Invitation facultative après la partie : **Entrez dans les coulisses du jeu** ouvre **[/atelier#atelier-decouverte](http://localhost:5173/atelier#atelier-decouverte)** dans un nouvel onglet, en conservant le résultat. Six étapes animées expliquent le geste, le relais/QR, les aliments 3D, la coupe et les règles, le mélange, puis le résultat et le classement. Navigation précédent/suivant et clavier, explications courtes et volet de code facultatif ; les démonstrations sont illustratives, sans mesures du joueur.
 
 Lire [le guide du salon et les choix réseau](docs/salon.md) et [la carte du code](docs/architecture.md).
 
@@ -176,7 +176,10 @@ shared/blades.ts        Trois lames, couleurs et validation partagées
 server/relay.ts         Salons et relais PC–téléphone
 server/index.ts         HTTP(S), Vite et service de production
 server/stand-*.ts       Validation, persistance et API du classement
-src/Atelier.tsx         Présentation pédagogique séparée
+src/Atelier.tsx         Diaporama pédagogique en six étapes animées
+src/atelierSlides.ts    Explications, exemples et références du diaporama
+src/components/AtelierStage.tsx  Cycle de vie de la démonstration 3D de l’atelier
+src/game/AtelierScene.ts  Illustrations 3D isolées avec les modèles du jeu
 src/components/ArcadeMenu.tsx  Menu de jeu et sélection
 src/components/PracticeRange.tsx  Essai des gestes
 src/components/ResultDiscovery.tsx  Invitation facultative vers l’atelier après la partie

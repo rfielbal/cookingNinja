@@ -32,7 +32,10 @@ Description du projet pour la démonstration BTS SIO du Lycée Guy Mollet, à Ar
 | `server/stand-api.ts`                     | API des parties et du classement du stand                                              |
 | `server/stand-domain.ts`                  | Validation du pseudonyme, du résultat et de sa plausibilité                            |
 | `server/stand-store.ts`                   | Persistance JSON locale des résultats                                                  |
-| `src/Atelier.tsx`, `src/atelier.css`      | Parcours pédagogique indépendant du jeu                                                |
+| `src/Atelier.tsx`, `src/atelier.css`      | Diaporama pédagogique en six étapes, navigation et volet de code facultatif            |
+| `src/atelierSlides.ts`                    | Textes des six étapes, extraits ou versions simplifiées et liens vers les sources      |
+| `src/components/AtelierStage.tsx`         | Montage de la démonstration 3D, visibilité, redimensionnement et repli sans WebGL      |
+| `src/game/AtelierScene.ts`                | Illustrations 3D autonomes réutilisant les modèles de `FoodFactory`                    |
 
 ## Le trajet réel d’une coupe
 
@@ -126,7 +129,7 @@ Les ingrédients restent sans contour rigide, badge ni texte attaché. Les rares
 
 La qualité allégée réduit la densité de pixels, les ombres et le nombre de particules ; certains mouvements CSS sont également arrêtés. `prefers-reduced-motion` désactive les animations CSS et les mouvements décoratifs de la scène, limite les éclats et supprime les confettis et étincelles supplémentaires. La physique des aliments et le retour visuel utile à la coupe restent actifs. Ces choix bornent le coût des effets sans constituer une mesure de performances sur tous les GPU.
 
-Les aliments sont fabriqués avec des géométries du projet, pas téléchargés depuis une bibliothèque distante. La coupe donne des éclats et une traînée ; il n’y a pas de découpe exacte du maillage. Le contrôleur et l’atelier peuvent être chargés sans charger la scène 3D.
+Les aliments sont fabriqués avec des géométries du projet, pas téléchargés depuis une bibliothèque distante. La coupe donne des éclats et une traînée ; il n’y a pas de découpe exacte du maillage. La route `/atelier` charge désormais Three.js pour sa propre scène pédagogique et réutilise les modèles de `FoodFactory`, séparément de la scène de partie. Le contrôleur téléphone conserve son chargement léger, sans Three.js.
 
 ## Son synchronisé avec la partie
 
@@ -185,9 +188,13 @@ Les mutations sont séquencées dans le processus. Le fichier est écrit tempora
 
 Aucun compte, contact ou formulaire email n’est prévu. Chaque résultat conserve son pseudonyme, sa recette, sa commande et sa version de règles, même lorsque les tableaux réunissent ces catégories. Les mesures brutes de capteurs ne sont pas enregistrées comme historique du joueur.
 
-## Découverte après la partie et essai guidé
+## Atelier en diaporama et essai guidé
 
-`ResultDiscovery` est un lien facultatif sans état de jeu : il ouvre `/atelier#atelier-decouverte` dans un nouvel onglet, sans remplacer l’écran du résultat. Le début de l’atelier propose un parcours d’environ trente secondes : geste et capteurs → message validé par le relais → collision de la scène confirmée par le moteur. Les liens pointent vers les fichiers du [dépôt réel](https://github.com/rfielbal/cookingNinja). Les nombres d’exemple sont explicitement synthétiques, pas une capture des gestes du visiteur. La suite conserve les cinq responsabilités détaillées, les extraits de code et la simulation de calibration utilisant le vrai `MotionTracker` avec des angles fabriqués.
+`ResultDiscovery` est un lien facultatif sans état de jeu : **Entrez dans les coulisses du jeu** ouvre `/atelier#atelier-decouverte` dans un nouvel onglet, sans remplacer l’écran du résultat. L’atelier présente un diaporama visuel de six étapes : **geste**, **relais et QR**, **aliments 3D**, **coupe et règles**, **mélange**, **résultat et classement**. Le visiteur avance ou revient avec les boutons ou le clavier ; les explications restent courtes et un volet de code facultatif donne les détails et liens vers les fichiers du [dépôt réel](https://github.com/rfielbal/cookingNinja).
+
+`atelierSlides.ts` porte les textes, les chemins de sources et les exemples, identifiés comme extraits ou versions simplifiées. Les animations et interactions du guide illustrent le fonctionnement : leurs positions, messages et scores d’exemple ne sont ni des mesures du téléphone du visiteur ni une relecture de sa partie. Les aliments utilisent les vrais modèles procéduraux de `FoodFactory` dans une scène Three.js propre à l’atelier. Le parcours distingue les responsabilités réelles : le téléphone produit la commande, le relais l’achemine, la scène détecte les intersections et le moteur décide des règles ; le mélange alimente une jauge et le PC transmet le résultat éligible au stockage du classement.
+
+`AtelierStage` monte et libère `AtelierScene`, observe la taille du conteneur et suspend l’animation lorsque l’onglet est masqué. La scène reçoit l’étape et les actions de démonstration ; elle ne lit aucun capteur, n’ouvre pas de connexion réseau et ne modifie pas les scores du stand. En mouvement réduit, elle présente une pose fixe, avec une courte animation possible sur une action explicite. Si WebGL est indisponible, les étapes et leurs textes restent accessibles.
 
 Avant la partie, `PracticeRange` propose un essai facultatif avec deux ingrédients de la recette à couper, puis un piège à laisser traverser l’écran. Couper ce piège recommence seulement son passage après un retour explicatif. L’exercice n’ajoute aucun point et ne retire aucune vie à la partie ; il peut être passé. Cette découverte des règles complète la calibration, elle ne la remplace pas.
 

@@ -2,6 +2,13 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 23 octobre 2026 — L’atelier devient un diaporama visuel
+
+- Refonte de l’atelier en six étapes : geste, relais et QR, aliments 3D, coupe et règles, mélange, puis résultat et classement. Les explications courtes accompagnent les animations ; les boutons précédent/suivant et le clavier permettent d’avancer à son rythme.
+- Les démonstrations 3D réutilisent les vrais modèles procéduraux de `FoodFactory` dans une scène propre à l’atelier. Leurs mouvements, messages et scores sont illustratifs ; ils ne proviennent pas de la partie du visiteur.
+- Le code et les liens vers les fichiers du projet restent accessibles dans un volet facultatif. La longue page à cartes et la simulation de calibration sont remplacées par ce parcours.
+- L’invitation après partie devient « Entrez dans les coulisses du jeu » et annonce « 6 étapes animées ». Elle conserve l’ouverture dans un nouvel onglet et l’adresse `/atelier#atelier-decouverte`.
+
 ## 23 octobre 2026 — Prise en main et découverte du projet
 
 - Le tutoriel utilise les vrais modèles de la recette : deux ingrédients à couper, puis un piège à laisser passer. Une erreur fait recommencer seulement le passage du piège, sans toucher aux vies ni au score. L’essai se suspend lorsque la commande est indisponible ou qu’un dialogue masque le jeu.

@@ -1,3 +1,20 @@
+# Atelier en diaporama animé — 23 octobre 2026
+
+Le serveur d’essai utilise `/tmp/cookingninja-slideshow-oct23-qa`. Cette refonte porte sur l’atelier et son invitation après partie ; le contrôleur, le tutoriel de jeu et les règles de score restent inchangés.
+
+- **136 tests réussis** ; TypeScript, build de production et vérification Prettier réussis. Les quatre extraits de code du guide ont été retrouvés dans leurs fichiers sources ; les deux autres exemples sont explicitement simplifiés.
+- Six étapes parcourues dans Chromium : geste, connexion, vol des ingrédients, coupe, mélange et résultat. Un seul canvas présent ; aucun `pageerror` observé sur ce parcours. Modèles issus de `FoodFactory`, couleurs, lisibilité et volet de code inspectés dans les captures `output/playwright/deck-*.png`, exclues du dépôt.
+- Rendu PC en **1440 × 960** et **1280 × 720** : document de même taille que le viewport, sans défilement requis. Les six étapes ont aussi été contrôlées en **390 × 844**, sans débordement horizontal. Sur ce format, précédent/suivant restent fixés en bas ; changer d’étape revient au début de l’explication.
+- L’inclinaison illustrée du téléphone change avec l’animation et se fige en pause. Les flèches du clavier et la touche Fin changent l’étape ; ouvrir le code suspend cette navigation et Échap ferme le volet. Le mouvement réduit garde la démonstration au repos.
+- Interactions de découpe contrôlées : tomate **+100 points**, poisson **−1 cœur**, poisson avec bouclier **aucun cœur perdu**. Ces nombres illustrent une seule coupe ; ils ne sont ni un score de partie ni un résultat enregistré. Le retour reste lisible après l’animation, jusqu’à la prochaine action ou sélection.
+- La jauge de mélange a été séparée de la rotation du fouet pour représenter une progression cumulée. Sur un chargement neuf du build de production, elle reste à **0** sans action, atteint environ **0,319** après une action puis conserve cette valeur au repos ; une seconde action l’amène vers **0,638**. Ces valeurs contrôlent l’illustration, pas le traitement d’un capteur réel.
+- WebGL désactivé artificiellement dans un contexte neuf : message de repli visible, navigation vers l’étape suivante possible, aucun `pageerror`. Ce test simule une indisponibilité graphique.
+- Le build de production sur **5174** a été ouvert dans le navigateur et le volet de code contrôlé. Aucun serveur de jeu ni tunnel n’a été redémarré pour cette évolution ; aucune partie classée n’a été jouée.
+
+Les gestes, messages réseau et classements de ce diaporama sont des illustrations autonomes. Ces essais ne mesurent ni performances GPU, ni capteurs, ni latence sur un téléphone physique. L’atelier n’ouvre pas de connexion de manette et ne collecte aucune donnée de visiteur.
+
+---
+
 # Tutoriel, diagnostic et découverte du projet — 23 octobre 2026
 
 Les essais utilisent `/tmp/cookingninja-tutorial-oct23-qa`, séparé des données du stand. Les règles de score, le suivi tactile et le traitement des gestes gyroscopiques ne changent pas.
