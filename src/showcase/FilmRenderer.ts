@@ -1,11 +1,20 @@
 import { ShowcaseScene } from '../game/ShowcaseScene';
-import { FILM_WIDTH, FILM_HEIGHT, filmShot, filmTime, easeOut, clamp } from './timeline';
+import {
+  FILM_WIDTH,
+  FILM_HEIGHT,
+  FILM_IMPACTS,
+  filmShot,
+  filmTime,
+  easeOut,
+  clamp,
+  punch,
+} from './timeline';
 
-const cream = '#fff2d3';
-const orange = '#ffb354';
+const CREAM = '#fff2d3';
+const ORANGE = '#ffb354';
 const TAU = Math.PI * 2;
 
-/** One composited canvas gives the live preview and the exported film identical artwork. */
+/** Full-frame edit: typography, camera hits and sound share the same time cues. */
 export class FilmRenderer {
   readonly canvas = document.createElement('canvas');
   private readonly ctx: CanvasRenderingContext2D;
@@ -25,187 +34,335 @@ export class FilmRenderer {
   render(time: number) {
     const t = filmTime(time);
     this.draw(t);
-    // Land on the exact opening composition: no black frame at the loop seam.
-    if (t > 31) {
-      this.ctx.globalAlpha = easeOut((t - 31) / 0.6);
+    // Finish the match cut before the last encoded frames; no black frame at the seam.
+    if (t > 31.2) {
+      this.ctx.globalAlpha = easeOut((t - 31.2) / 0.4);
       this.ctx.drawImage(this.opening, 0, 0);
       this.ctx.globalAlpha = 1;
     }
   }
 
-  private text(value: string, x: number, y: number, size: number, color = cream, weight = 800) {
-    this.ctx.fillStyle = color;
-    this.ctx.font = `${weight} ${size}px Outfit, sans-serif`;
-    this.ctx.fillText(value, x, y);
+  private text(value: string, x: number, y: number, size: number, color = CREAM, outline = false) {
+    const c = this.ctx;
+    c.font = '800 ' + size + 'px Outfit, sans-serif';
+    c.textAlign = 'center';
+    if (outline) {
+      c.lineWidth = 2.5;
+      c.strokeStyle = color;
+      c.strokeText(value, x, y);
+    } else {
+      c.fillStyle = color;
+      c.fillText(value, x, y);
+    }
   }
 
-  private background(t: number, frenzy: boolean) {
+  private kinetic(
+    value: string,
+    x: number,
+    y: number,
+    size: number,
+    age: number,
+    options: { color?: string; angle?: number; outline?: boolean; impact?: number } = {},
+  ) {
     const c = this.ctx;
-    c.fillStyle = '#092c25';
+    const entry = easeOut(age / 0.3);
+    if (!entry) return;
+    c.save();
+    c.globalAlpha *= entry;
+    c.translate(x, y + (1 - entry) * 100);
+    c.rotate((options.angle ?? 0) + (1 - entry) * -0.11);
+    const spring = 1 + punch(age) * 0.1 + (options.impact ?? 0) * 0.05;
+    c.scale(spring, spring * (0.65 + entry * 0.35));
+    this.text(value, 0, 0, size, options.color ?? CREAM, options.outline);
+    c.restore();
+  }
+
+  private background(t: number) {
+    const c = this.ctx;
+    const s = filmShot(t);
+    const frenzy = s.id === 'frenzy',
+      shield = s.id === 'shield',
+      danger = s.id === 'danger',
+      bright = s.id === 'brand';
+    c.fillStyle = bright ? '#f1b05e' : '#082c25';
     c.fillRect(0, 0, FILM_WIDTH, FILM_HEIGHT);
-    const centerX = 1370 + Math.sin(t * 0.5) * 100;
-    const glow = c.createRadialGradient(centerX, 560, 30, centerX, 560, 1040);
-    glow.addColorStop(0, frenzy ? '#6e5924' : '#38684b');
-    glow.addColorStop(0.55, frenzy ? '#30462d' : '#1c4b38');
-    glow.addColorStop(1, '#092c25');
+    const x = 960 + Math.sin(t * 0.7) * 160,
+      y = 540 + Math.cos(t * 0.9) * 110;
+    const glow = c.createRadialGradient(x, y, 40, x, y, 1200);
+    glow.addColorStop(
+      0,
+      bright ? '#ffdc90' : danger ? '#6b3025' : frenzy ? '#80702b' : shield ? '#287571' : '#37694b',
+    );
+    glow.addColorStop(1, bright ? '#ef9853' : '#082c25');
     c.fillStyle = glow;
     c.fillRect(0, 0, FILM_WIDTH, FILM_HEIGHT);
     c.save();
-    c.translate(centerX, 560);
-    c.rotate(t * 0.025);
-    c.strokeStyle = '#d7e5ae';
-    c.lineWidth = 1.5;
-    for (let i = 0; i < 4; i++) {
-      c.globalAlpha = 0.09 - i * 0.012;
+    c.translate(x, y);
+    c.rotate(t * 0.11);
+    for (let i = 0; i < 12; i++) {
+      c.rotate(TAU / 12);
+      c.fillStyle = bright ? '#fff2d314' : '#e8e6b107';
       c.beginPath();
-      c.ellipse(0, 0, 290 + i * 155, 290 + i * 155, 0, 0, TAU);
-      c.stroke();
-    }
-    c.restore();
-    // Fine floating seasoning; deterministic paths keep export and preview in sync.
-    for (let i = 0; i < 48; i++) {
-      const speed = frenzy ? 140 : 13;
-      const x = ((i * 271.7 + t * speed) % 2000) - 40;
-      const y = 180 + ((i * 179.3) % 800) + Math.sin(t + i) * 18;
-      c.globalAlpha = (i % 3 === 0 ? 0.3 : 0.12) * (0.7 + Math.sin(t + i) * 0.3);
-      c.fillStyle = orange;
-      c.beginPath();
-      c.ellipse(x, y, frenzy ? 19 : 2.5, 2, -0.32, 0, TAU);
+      c.moveTo(0, 0);
+      c.lineTo(1500, -80);
+      c.lineTo(1500, 80);
       c.fill();
     }
+    c.restore();
+    for (let i = 0; i < 42; i++) {
+      const speed = frenzy ? 2.8 : s.id === 'loop' ? 2.1 : 0.42;
+      const p = (i / 42 + t * speed * 0.12) % 1;
+      const a = i * 2.39996 + t * 0.06,
+        r = 190 + p * 1120;
+      c.strokeStyle = bright ? '#174f3c30' : '#ffd197';
+      c.globalAlpha = frenzy ? 0.08 + p * 0.25 : 0.08;
+      c.lineWidth = 1.5 + p * 2;
+      c.beginPath();
+      c.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      const end = r + 12 + p * (frenzy ? 220 : 28);
+      c.lineTo(x + Math.cos(a) * end, y + Math.sin(a) * end);
+      c.stroke();
+    }
     c.globalAlpha = 1;
-    // The left-side gradient protects large typography from the brightest lighting.
-    const shade = c.createLinearGradient(0, 0, 1150, 0);
-    shade.addColorStop(0, '#092c25d9');
-    shade.addColorStop(1, '#092c2500');
-    c.fillStyle = shade;
-    c.fillRect(0, 0, 1200, FILM_HEIGHT);
   }
 
-  private brand() {
+  private brand(y: number, size: number, age: number, dark = false) {
+    const c = this.ctx,
+      entry = easeOut(age / 0.35);
+    c.save();
+    c.translate(960, y + (1 - entry) * 90);
+    c.rotate(-0.045 * (1 - entry));
+    const zoom = 0.7 + entry * 0.3 + punch(age) * 0.06;
+    c.scale(zoom, zoom);
+    c.font = '800 ' + size + 'px Outfit';
+    const width = c.measureText('cookingninja').width;
+    c.textAlign = 'left';
+    c.fillStyle = dark ? '#123e30' : CREAM;
+    c.fillText('cooking', -width / 2, 0);
+    c.fillStyle = dark ? '#9e3827' : ORANGE;
+    c.fillText('ninja', -width / 2 + c.measureText('cooking').width, 0);
+    c.restore();
+  }
+
+  private hearts(t: number) {
     const c = this.ctx;
-    this.text('cooking', 90, 106, 48);
-    c.font = '800 48px Outfit';
-    this.text('ninja', 90 + c.measureText('cooking').width, 106, 48, orange);
-    c.fillStyle = '#fff2d337';
-    c.fillRect(1310, 56, 2, 75);
-    this.text('LYCÉE GUY MOLLET', 1343, 88, 32, cream, 600);
-    this.text('ARRAS  /  BTS SIO', 1343, 119, 21, '#b9cbb4', 500);
-    c.fillStyle = '#fff2d31c';
-    c.fillRect(90, 160, 1740, 1);
+    for (let i = 0; i < 3; i++) {
+      const lost = i > 0 && t >= 11.9,
+        age = Math.max(0, t - 11.9);
+      c.save();
+      c.translate(795 + i * 160 + (lost ? Math.sin(age * 40) * 12 * Math.exp(-age * 5) : 0), 910);
+      c.fillStyle = lost ? '#fff2d32b' : ORANGE;
+      c.beginPath();
+      c.moveTo(0, 30);
+      c.bezierCurveTo(-90, -30, -35, -95, 0, -49);
+      c.bezierCurveTo(35, -95, 90, -30, 0, 30);
+      c.fill();
+      c.restore();
+    }
   }
 
   private draw(t: number) {
-    const shot = filmShot(t);
-    const c = this.ctx;
+    const c = this.ctx,
+      s = filmShot(t);
+    const impact = FILM_IMPACTS.reduce(
+      (sum, cue) => sum + (t >= cue && t < cue + 0.5 ? Math.exp(-(t - cue) * 13) : 0),
+      0,
+    );
     c.globalAlpha = 1;
-    this.background(t, shot.index === 3);
-    if (shot.index !== 5) {
-      c.save();
-      c.translate(1170, 570);
-      c.rotate(-0.14);
-      c.globalAlpha = 0.045;
-      this.text(shot.index === 3 ? 'FRÉNÉSIE' : 'NINJA', -170, 170, 250);
-      c.restore();
+    this.background(t);
+    c.save();
+    c.translate(Math.sin(t * 57) * impact * 10, Math.cos(t * 49) * impact * 6);
+
+    // Type occupies the same stage as the ingredients, rather than a text column.
+    switch (s.id) {
+      case 'hook':
+        this.kinetic('PRÊT ?', 960, 650, 390, s.local + 0.1, { outline: true });
+        break;
+      case 'brand':
+        this.brand(590, 244, s.local + 0.15, true);
+        break;
+      case 'slice':
+        c.save();
+        c.globalAlpha = 0.32;
+        c.translate(960, 560);
+        c.rotate(-0.13 + Math.sin(s.local) * 0.02);
+        this.text('TRANCHEZ', ((s.local * 180) % 900) - 450, 110, 345, CREAM, true);
+        c.restore();
+        break;
+      case 'danger':
+        this.kinetic(t < 11.9 ? 'ATTENTION' : 'OUPS !', 960, 600, t < 11.9 ? 235 : 420, s.local, {
+          color: '#ff8666',
+          angle: -0.09,
+          impact,
+        });
+        break;
+      case 'frenzy':
+        c.save();
+        c.globalAlpha = 0.4;
+        this.kinetic('FRÉNÉSIE', 960, 650, 360, s.local, {
+          color: ORANGE,
+          outline: true,
+          angle: -0.09,
+          impact,
+        });
+        c.restore();
+        break;
+      case 'shield':
+        c.save();
+        c.globalAlpha = 0.45;
+        this.kinetic('SAUVÉ !', 960, 690, 390, s.local, {
+          color: '#b6ffec',
+          outline: true,
+          impact,
+        });
+        c.restore();
+        break;
+      case 'mix':
+        c.save();
+        c.translate(960, 550);
+        c.rotate(s.local * 0.18 - 0.17);
+        c.globalAlpha = 0.24;
+        this.text('TOURNEZ', 0, 100, 340, CREAM, true);
+        c.restore();
+        break;
+      case 'dishes': {
+        const word = t < 23.3 ? 'BURGER' : t < 24.6 ? 'TACOS' : 'GÂTEAU';
+        const cue = t < 23.3 ? 22 : t < 24.6 ? 23.3 : 24.6;
+        c.save();
+        c.globalAlpha = 0.28;
+        this.kinetic(word, 960, 620, word === 'TACOS' ? 440 : 375, t - cue + 0.1, {
+          outline: true,
+          color: ORANGE,
+          angle: -0.04,
+        });
+        c.restore();
+        break;
+      }
     }
+
     this.scene.render(t);
     c.drawImage(this.scene.canvas, 0, 0);
-    this.brand();
 
-    const outgoing = 1 - easeOut((shot.local - (shot.end - shot.at - 0.3)) / 0.3);
-    const entry = easeOut(shot.local / 0.7);
-    c.save();
-    c.globalAlpha = outgoing;
-    const x = shot.index === 5 ? 960 : 100;
-    if (shot.index === 5) c.textAlign = 'center';
-    const headingY = shot.index === 5 ? 270 : 315;
-    const tag = `${String(shot.index + 1).padStart(2, '0')}  /  ${shot.label.toLocaleUpperCase('fr')}`;
-    this.text(tag, x, headingY + (1 - entry) * 22, 22, orange, 500);
-
-    shot.lines.forEach((line, i) => {
-      const p = easeOut((shot.local - i * 0.09) / 0.65);
-      c.save();
-      const fontSize = shot.index === 5 ? 73 : shot.index === 1 ? 82 : 105;
-      const baseline = headingY + 125 + i * 110;
-      c.beginPath();
-      c.rect(0, baseline - 105, 1920, 116);
-      c.clip();
-      c.globalAlpha = p * outgoing;
-      this.text(
-        line,
-        x,
-        baseline + (1 - p) * 110,
-        fontSize,
-        i === shot.lines.length - 1 ? orange : cream,
-      );
-      c.restore();
-    });
-    if (shot.index !== 5) {
-      const y = headingY + 125 + shot.lines.length * 110 + 25;
-      c.globalAlpha = easeOut((shot.local - 0.35) / 0.6) * outgoing;
-      c.fillStyle = orange;
-      c.fillRect(x, y - 7, 46 * entry, 3);
-      this.text(shot.caption, x + 65, y + 2, 27, '#cbdbc5', 400);
-      if (shot.index === 6) {
-        c.fillStyle = orange;
-        c.beginPath();
-        c.roundRect(x, y + 56, 352, 68, 34);
-        c.fill();
-        this.text('VENEZ ESSAYER  →', x + 30, y + 100, 28, '#143d2e', 600);
+    switch (s.id) {
+      case 'hook': {
+        const slice = easeOut((t - 1.2) / 0.4);
+        for (let half = 0; half < 2; half++) {
+          c.save();
+          c.globalAlpha = 1 - clamp((t - 1.65) / 0.2);
+          c.beginPath();
+          c.rect(0, half ? 545 : 0, 1920, half ? 535 : 545);
+          c.clip();
+          this.kinetic(
+            'PRÊT ?',
+            960 + (half ? -1 : 1) * slice * 500,
+            660 + (half ? 110 : -120) * slice,
+            310,
+            t + 0.1,
+            { angle: (half ? 1 : -1) * slice * 0.1 },
+          );
+          c.restore();
+        }
+        break;
       }
-    } else {
-      this.text(shot.caption, x, 458, 29, '#cbdbc5', 400);
+      case 'brand':
+        this.kinetic('LA CUISINE PASSE À L’ACTION.', 960, 960, 57, s.local - 0.2, {
+          color: '#173f2d',
+        });
+        break;
+      case 'gesture':
+        this.kinetic('VOTRE TÉLÉPHONE.', 960, 210, 107, s.local + 0.1);
+        this.kinetic('VOTRE LAME.', 1180 + Math.sin(s.local * 1.6) * 35, 950, 142, s.local - 0.25, {
+          color: ORANGE,
+          angle: -0.045,
+        });
+        break;
+      case 'slice': {
+        const words = ['VISEZ.', 'TRANCHEZ.', 'ENCHAÎNEZ.', 'ENCORE !'];
+        const cut = Math.min(3, Math.floor(s.local));
+        this.kinetic(words[cut], 960, 970, 133, (s.local % 1) + 0.12, {
+          color: ORANGE,
+          angle: cut % 2 ? 0.035 : -0.035,
+          impact,
+        });
+        break;
+      }
+      case 'danger': {
+        this.hearts(t);
+        const age = t - 11.9;
+        if (age >= 0 && age < 0.7) {
+          const glow = c.createRadialGradient(960, 540, 300, 960, 540, 1100);
+          glow.addColorStop(0, '#e95c4000');
+          glow.addColorStop(1, 'rgba(255,65,40,' + 0.48 * Math.exp(-age * 5) + ')');
+          c.fillStyle = glow;
+          c.fillRect(0, 0, 1920, 1080);
+          c.strokeStyle = 'rgba(255,110,75,' + Math.exp(-age * 5) + ')';
+          c.lineWidth = 20;
+          c.strokeRect(12, 12, 1896, 1056);
+        }
+        break;
+      }
+      case 'frenzy':
+        if (s.local < 1)
+          this.kinetic('ÇA S’EMBALLE.', 960, 960, 134, s.local + 0.1, { color: ORANGE, impact });
+        else {
+          const age = s.local - 1,
+            count = Math.max(1, 3 - Math.floor(age));
+          this.kinetic('RARE !', 960, 175, 118, age + 0.15, { color: '#ffeab0', angle: -0.04 });
+          this.kinetic(String(count), 315, 650, 235, (age % 1) + 0.1, { color: ORANGE });
+          this.kinetic('COUPEZ EN RAFALE', 960, 990, 92, age + 0.1, { color: '#ffeab0', impact });
+        }
+        break;
+      case 'shield':
+        this.kinetic('BOUCLIER ACTIVÉ', 960, 960, 107, s.local + 0.15, {
+          color: '#bcffe9',
+          impact,
+        });
+        break;
+      case 'mix':
+        c.save();
+        c.translate(960, 570);
+        c.rotate(t * 2.8);
+        c.strokeStyle = ORANGE;
+        c.lineWidth = 9;
+        for (let i = 0; i < 2; i++) {
+          c.rotate(Math.PI);
+          c.beginPath();
+          c.ellipse(0, 0, 560, 390, 0, 0.1, 2.6);
+          c.stroke();
+          c.save();
+          c.translate(Math.cos(2.6) * 560, Math.sin(2.6) * 390);
+          c.rotate(2.6);
+          c.fillStyle = ORANGE;
+          c.beginPath();
+          c.moveTo(-20, -18);
+          c.lineTo(0, 28);
+          c.lineTo(20, -18);
+          c.fill();
+          c.restore();
+        }
+        c.restore();
+        this.kinetic('UN DERNIER TOUR.', 960, 190, 106, s.local + 0.1);
+        break;
+      case 'dishes':
+        this.kinetic('À TABLE !', 960, 980, 126, s.local + 0.1, { color: ORANGE, impact });
+        break;
+      case 'finale':
+        this.brand(260, 167, s.local + 0.1);
+        this.kinetic('VENEZ JOUER.', 960, 400, 109, s.local - 0.15, { color: ORANGE });
+        this.kinetic('LYCÉE GUY MOLLET', 960, 955, 66, s.local - 0.3);
+        this.text('ARRAS  ·  BTS SIO', 960, 1010, 31, '#bbd3be');
+        break;
     }
     c.restore();
 
-    // The mixing instruction is a moving circular arrow, recognizable from the game.
-    if (shot.index === 4) {
+    // School identity stays discreet during action and becomes prominent at the end.
+    if (s.id !== 'finale' && s.id !== 'brand') {
       c.save();
-      c.translate(1430, 620);
-      c.rotate(t * 1.6);
-      c.strokeStyle = orange;
-      c.fillStyle = orange;
-      c.lineWidth = 6;
-      for (let i = 0; i < 2; i++) {
-        c.rotate(Math.PI);
-        c.beginPath();
-        c.arc(0, 0, 310, 0.1, 2.45);
-        c.stroke();
-        c.save();
-        c.rotate(2.45);
-        c.translate(310, 0);
-        c.beginPath();
-        c.moveTo(-15, -15);
-        c.lineTo(0, 22);
-        c.lineTo(15, -15);
-        c.fill();
-        c.restore();
-      }
-      c.restore();
-    }
-
-    // Editorial progress strip, part of the film rather than playback controls.
-    c.fillStyle = '#fff2d328';
-    c.fillRect(100, 998, 1720, 2);
-    c.fillStyle = orange;
-    c.fillRect(100, 998, (t / 32) * 1720, 2);
-    this.text('UN PROJET ÉTUDIANT. UNE EXPÉRIENCE À JOUER.', 100, 1040, 19, '#9db7a5', 500);
-    c.textAlign = 'right';
-    this.text('COOKINGNINJA', 1820, 1040, 19, '#9db7a5', 500);
-    c.textAlign = 'left';
-
-    // Short diagonal wipe at each edit, warm rather than a white flash.
-    if (shot.index > 0 && shot.local < 0.38) {
-      const travel = clamp(shot.local / 0.38);
-      c.save();
-      c.translate(-800 + travel * 3500, 0);
-      c.fillStyle = orange;
-      c.beginPath();
-      c.moveTo(0, 0);
-      c.lineTo(620, 0);
-      c.lineTo(100, 1080);
-      c.lineTo(-520, 1080);
-      c.fill();
+      c.globalAlpha = 0.7;
+      c.textAlign = 'left';
+      c.font = '800 22px Outfit';
+      c.fillStyle = CREAM;
+      c.fillText('LYCÉE GUY MOLLET · ARRAS', 50, 1040);
       c.restore();
     }
   }

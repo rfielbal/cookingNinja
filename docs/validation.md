@@ -1,3 +1,30 @@
+# Montage du film et export image par image — 25 octobre 2026
+
+Les essais utilisent `/tmp/cookingninja-motion-oct25-qa`, séparé des scores réels. Cette évolution porte sur le montage, les animations du film et sa bande-son. Le contrôleur, les règles des parties et le stockage du classement restent inchangés.
+
+## Vérifications du montage
+
+- **136 tests réussis** ; `npm run typecheck`, `npm run build` et `npm run format:check` réussis.
+- La chronologie comporte onze séquences sur 32 secondes ; la sélection de séquence a été vérifiée à chacune de leurs bornes de début.
+- Des captures de revue ont été produites dans Chromium aux temps **0,5 ; 2,8 ; 5,1 ; 8,7 ; 11,65 ; 14,2 ; 17,7 ; 20,5 ; 23,7 et 27,3 secondes**. Elles sont conservées dans `output/playwright/motion-v2/`, hors du dépôt. Elles permettent de relire les cadrages et les titres, mais ne prouvent pas à elles seules la fluidité du film ni son raccord de boucle.
+- Le déterminisme des poses a été contrôlé à **36 instants** : chaque pose a été enregistrée, puis recalculée après une série d’autres temps demandés dans un ordre non chronologique. Les transformations visibles, les propriétés des matériaux et les matrices de caméra sont identiques dans les deux parcours ; aucune matrice non finie ni divergence n’a été observée.
+- Ce contrôle utilise les vraies classes Three.js, `FoodFactory` et `ShowcaseScene`, avec un **substitut de `WebGLRenderer`**. Il vérifie les données de scène, pas les pixels produits par le GPU, l’éclairage final ou le fichier vidéo encodé.
+- Deux incohérences ont été corrigées pendant la revue : la première coupe démarrait avant son impact sonore ; la démonstration de bombe retirait un seul cœur alors que les règles en prévoient deux. Les instants de coupe et les cœurs affichés sont désormais alignés avec la mise en scène annoncée.
+
+## Export et mesures du fichier livré
+
+Le nouvel export est produit à partir de **960 PNG calculés à `t = n / 30`**, accompagnés d’un WAV produit par `OfflineAudioContext`, puis encodé en H.264/AAC. Cette méthode fixe les instants des images indépendamment de la durée de leur calcul. Elle se distingue de l’export natif `MediaRecorder` toujours proposé par le studio. Le calcul a été repris après interruption du navigateur ; la présence des 960 images consécutives a été vérifiée avant encodage.
+
+- FFmpeg/ffprobe 7.1.1 : **1920 × 1080, H.264 High/yuv420p, 960 images décodées à 30 images/s**, pistes vidéo et audio de **32 secondes**, AAC LC stéréo **48 kHz**. Taille : **30 885 190 octets**. L’atome `moov` précède `mdat` : `faststart` vérifié. Décodage complet sans erreur.
+- Le premier et le dernier PNG sont identiques. Le raccord final revient à la composition d’ouverture ; le lecteur a bien rebouclé de 31,6 s à 0,576 s pendant l’essai. La cadence fixe du fichier ne garantit pas l’absence de pertes d’images sur tous les écrans.
+- Audio source : crête **0,810**, RMS **0,0651**, début nul et fin proche de zéro. Audio AAC décodé : **−21,37 LUFS intégrés**, crête vraie **−1,95 dBTP**. Le niveau a été relevé après mesure ; aucune normalisation supplémentaire n’est appliquée au MP4. Ces mesures confirment un signal présent sans saturation, pas une écoute sur la sonorisation du salon.
+- Images finales relues avant encodage, dont la bombe avant/après impact, le bouclier, les plats et le retour de boucle. Image de frénésie décodée du MP4 et nouvelle affiche WebP inspectées. Le cadre du téléphone a été séparé du corps pour supprimer les surfaces coplanaires visibles dans les premières captures.
+- Production locale **5174** : nouveau MP4 visible, dimensions et durée correctes, lecture automatique silencieuse en boucle. Après clic sur **Activer le son du film**, contexte audio actif et signal mesuré dans le navigateur (RMS ≈ 0,027 sur l’échantillon). **Échap** ferme le lecteur et retrouve l’accueil. Aucun `pageerror` observé. Le build a été actualisé sans redémarrer le serveur ni le tunnel. Capture `output/playwright/motion-v2/production-stand.png`, hors dépôt.
+
+Les mesures du **24 octobre** ci-dessous concernent le fichier précédent et ne valent pas pour ce nouvel export. Les essais de cette section ne mesurent ni les capteurs d’un téléphone physique, ni la puissance des haut-parleurs du salon. Les images intermédiaires, captures, pistes de travail et journaux restent hors du dépôt.
+
+---
+
 # Film et mode stand — 24 octobre 2026
 
 Les essais du développement utilisent `/tmp/cookingninja-film-oct23-qa`, séparé des scores réels. La vérification finale du lecteur utilise le build de production déjà servi sur **5174**, sans lancement de partie ni redémarrage du serveur ou du tunnel.

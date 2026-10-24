@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { FoodFactory } from './food';
-import { RUSH_WORLD_SPEED } from './events';
 import type { FoodKind } from './recipes';
 
 type CutHalf = { object: THREE.Group; plane: THREE.Plane; side: number };
@@ -47,6 +46,10 @@ export class ShowcaseScene {
   private readonly fragments: THREE.Mesh[] = [];
   private readonly fragmentMaterials: THREE.MeshStandardMaterial[] = [];
   private readonly halves: CutHalf[] = [];
+  private readonly cutPairs: CutHalf[][] = [];
+  private readonly bomb: THREE.Group;
+  private readonly shieldShell: THREE.Mesh;
+  private readonly impactRing: THREE.Mesh;
   private readonly normalMatrix = new THREE.Matrix3();
   private readonly warmHalo: THREE.Mesh;
   private readonly cyanHalo: THREE.Mesh;
@@ -105,7 +108,16 @@ export class ShowcaseScene {
     this.buildPhone();
     this.gestureTomato = this.food('tomato');
     this.gesture.add(this.phone, this.gestureTomato);
-    for (const kind of ['bread', 'tomato', 'lettuce', 'cheese'] as const) {
+    for (const kind of [
+      'bread',
+      'tomato',
+      'lettuce',
+      'cheese',
+      'onion',
+      'avocado',
+      'strawberry',
+      'chicken',
+    ] as const) {
       const object = this.food(kind);
       this.flightFoods.push(object);
       this.flight.add(object);
@@ -161,6 +173,7 @@ export class ShowcaseScene {
       transparent: true,
       opacity: 0.96,
       depthWrite: false,
+      depthTest: false,
       toneMapped: false,
     });
     const bladeGlowMaterial = new THREE.MeshBasicMaterial({
@@ -168,6 +181,7 @@ export class ShowcaseScene {
       transparent: true,
       opacity: 0.24,
       depthWrite: false,
+      depthTest: false,
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
@@ -181,6 +195,7 @@ export class ShowcaseScene {
     });
     this.blade = new THREE.Mesh(slashGeometry, bladeMaterial);
     this.bladeGlow = new THREE.Mesh(slashGeometry, bladeGlowMaterial);
+    this.blade.renderOrder = this.bladeGlow.renderOrder = 20;
     this.scene.add(this.bladeGlow, this.blade);
     for (let i = 0; i < 4; i++) {
       const dot = new THREE.Mesh(
@@ -190,7 +205,16 @@ export class ShowcaseScene {
       this.pathDots.push(dot);
       this.scene.add(dot);
     }
-    for (const color of ['#ef6e4a', '#ffb385', '#fbd7a7', '#88b955', '#ffd083'])
+    for (const color of [
+      '#ef6e4a',
+      '#ffb385',
+      '#fbd7a7',
+      '#88b955',
+      '#ffd083',
+      '#9bfff0',
+      '#313546',
+      '#f65b44',
+    ])
       this.fragmentMaterials.push(this.factory.material(color, 0.6));
     for (let i = 0; i < 28; i++) {
       const fragment = new THREE.Mesh(
@@ -201,6 +225,34 @@ export class ShowcaseScene {
       this.scene.add(fragment);
     }
     this.buildCutHalves();
+    this.bomb = this.factory.createFood('danger');
+    const shieldMaterial = new THREE.MeshPhysicalMaterial({
+      color: '#6fece2',
+      transparent: true,
+      opacity: 0.14,
+      roughness: 0.15,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: '#ffda83',
+      transparent: true,
+      opacity: 0.7,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    this.ownedMaterials.push(shieldMaterial, ringMaterial);
+    this.shieldShell = new THREE.Mesh(
+      this.factory.geometry('film-shield-shell', () => new THREE.SphereGeometry(1, 48, 32)),
+      shieldMaterial,
+    );
+    this.impactRing = new THREE.Mesh(
+      this.factory.geometry('film-impact-ring', () => new THREE.TorusGeometry(1, 0.014, 8, 96)),
+      ringMaterial,
+    );
+    this.scene.add(this.bomb, this.shieldShell, this.impactRing);
   }
 
   get canvas(): HTMLCanvasElement {
@@ -217,17 +269,30 @@ export class ShowcaseScene {
     for (const half of this.halves) half.object.visible = false;
     this.warmHalo.visible = this.cyanHalo.visible = this.contactShadow.visible = false;
     this.blade.visible = this.bladeGlow.visible = false;
-    if (t < 4) this.hook(t);
-    else if (t < 9) this.gesturePlan(t - 4);
-    else if (t < 14) this.cutPlan(t - 9);
-    else if (t < 18) this.frenzy(t - 14);
-    else if (t < 23) this.mixing(t - 18);
-    else if (t < 27) this.recipePlan(t - 23);
-    else this.finalPlan(t - 27);
+    this.bomb.visible = this.shieldShell.visible = this.impactRing.visible = false;
+    this.shieldStar.visible = this.rareTomato.visible = false;
+    for (const sparkle of this.goldSparks) sparkle.visible = false;
+    for (const mark of this.speedMarks) mark.visible = false;
+    this.camera.position.set(0, 0, 1800);
+    this.camera.rotation.set(0, 0, 0);
+    this.camera.zoom = 1;
+    if (t < 2) this.hook(t);
+    else if (t < 4) this.brand(t - 2);
+    else if (t < 7) this.gesturePlan(t - 4);
+    else if (t < 11) this.cutPlan(t - 7);
+    else if (t < 13) this.danger(t - 11);
+    else if (t < 17) this.frenzy(t - 13);
+    else if (t < 19) this.shield(t - 17);
+    else if (t < 22) this.mixing(t - 19);
+    else if (t < 26) this.macroDishes(t - 22);
+    else if (t < 29.5) this.recipePlan(t - 26);
+    else this.loop(t - 29.5);
+    this.camera.updateProjectionMatrix();
     this.scene.updateMatrixWorld(true);
     for (const half of this.halves) {
       if (!half.object.visible) continue;
-      half.plane.set(new THREE.Vector3(half.side, 0, 0), 0);
+      half.plane.normal.set(half.side, 0, 0);
+      half.plane.constant = 0;
       this.normalMatrix.getNormalMatrix(half.object.matrixWorld);
       half.plane.applyMatrix4(half.object.matrixWorld, this.normalMatrix);
     }
@@ -281,27 +346,50 @@ export class ShowcaseScene {
     (mesh.material as THREE.ShaderMaterial).uniforms.opacity.value = opacity;
   }
 
-  private heroPose(local: number, explode: number, scale: number, x = 1450): void {
+  private heroPose(t: number, explode: number, scale: number): void {
     this.hero.visible = true;
-    this.position(this.hero, x, 827 + Math.sin(local * 1.1) * 7);
-    this.hero.rotation.set(0.26, -0.18 + Math.sin(local * 0.6) * 0.09, 0.035 * Math.sin(local));
+    this.position(this.hero, 960, 835 + Math.sin(t * 2) * 10);
+    this.hero.rotation.set(
+      0.34 + Math.sin(t * 1.4) * 0.045,
+      -0.42 + t * 0.3,
+      Math.sin(t * 2) * 0.035,
+    );
     this.hero.scale.setScalar(scale);
     for (const layer of this.heroLayers) layer.object.position.y = layer.y + layer.order * explode;
-    this.halo(this.warmHalo, x, 545, 700, 730, 0.29);
-    this.halo(this.contactShadow, x, 913, 690, 70, 0.55);
+    this.halo(this.warmHalo, 960, 570, 1250, 1050, 0.42);
+    this.halo(this.contactShadow, 960, 940, 1100, 100, 0.6);
   }
 
   private hook(t: number): void {
-    const entrance = out(t / 0.65);
-    const explode = 0.92 * smooth((t - 0.35) / 0.7) * (1 - smooth((t - 2.15) / 1.0));
-    this.heroPose(t, explode, 115 * (0.76 + entrance * 0.24));
-    const shine = 1 - Math.abs(t - 2.6) / 0.9;
-    if (shine > 0) {
-      this.finaleFoods[1].visible = true;
-      this.position(this.finaleFoods[1], 1760, 395 + Math.sin(t * 2) * 10);
-      this.finaleFoods[1].scale.setScalar(42 * smooth(shine));
-      this.finaleFoods[1].rotation.set(1.05, -0.16, -0.09);
-    }
+    const cut = t - 1.2;
+    this.gesture.visible = true;
+    this.phone.visible = false;
+    this.gestureTomato.visible = cut < 0;
+    const scale = 305 + out(t / 0.95) * 155;
+    this.position(this.gestureTomato, 960, 540, 80);
+    this.gestureTomato.scale.setScalar(scale);
+    this.gestureTomato.rotation.set(1.05, -0.16, -0.09 + Math.sin(t * 2) * 0.06);
+    this.halo(this.warmHalo, 960, 540, 1250, 1150, 0.48);
+    this.sweep(cut + 0.18, 960, 540, 1240, -0.38);
+    this.cutFood(cut, 960, 540, 460, 1, 1.05, 300);
+    this.burst(cut, 960, 540, 1.4, 'food');
+    this.camera.zoom = 1 + Math.sin(clamp(cut / 0.3) * Math.PI) * 0.035;
+  }
+
+  private brand(t: number): void {
+    const assembly = smooth((t - 0.1) / 1.25);
+    const bounce = Math.sin(clamp((t - 1.15) / 0.75) * Math.PI) * 0.07;
+    this.heroPose(t, (1 - assembly) * 2.5, 142 + out(t / 0.5) * 13 + bounce * 100);
+    this.hero.rotation.y = -0.72 + out(t / 1.8) * 1.07;
+    this.camera.zoom = 0.91 + smooth(t / 2) * 0.12;
+    this.camera.rotation.z = (1 - assembly) * -0.045;
+    this.finaleFoods.forEach((food, i) => {
+      const a = t * 1.6 + (i * TAU) / 3;
+      food.visible = true;
+      this.position(food, 960 + Math.cos(a) * 580, 540 + Math.sin(a) * 260, Math.sin(a) * 100);
+      food.rotation.set(1.05, a, a * 0.2);
+      food.scale.setScalar(70 + Math.sin(t * 3 + i) * 8);
+    });
   }
 
   private buildPhone(): void {
@@ -331,7 +419,7 @@ export class ShowcaseScene {
       '#65796d',
       0.35,
     );
-    bezel.position.z = 12;
+    bezel.position.z = 15;
     const screen = this.factory.mesh(
       this.factory.geometry(
         'film-phone-screen',
@@ -340,17 +428,17 @@ export class ShowcaseScene {
       '#0c3027',
       0.35,
     );
-    screen.position.z = 13;
+    screen.position.z = 17;
     const speaker = this.factory.box('#071c17', [46, 5, 2]);
-    speaker.position.set(0, 147, 16);
+    speaker.position.set(0, 147, 21);
     const button = this.factory.sphere('#ffbc70', [21, 21, 3]);
-    button.position.set(0, -110, 16);
+    button.position.set(0, -110, 21);
     const home = this.factory.box('#b7d4c1', [44, 3, 2]);
-    home.position.set(0, -151, 16);
+    home.position.set(0, -151, 21);
     const ring = this.factory.ring('#a7e4bb', 15, 1.4);
     const core = this.factory.sphere('#ffe4ab', [4, 4, 2]);
     this.phoneCursor.add(ring, core);
-    this.phoneCursor.position.z = 20;
+    this.phoneCursor.position.z = 25;
     this.phone.add(body, bezel, screen, speaker, button, home, this.phoneCursor);
   }
 
@@ -372,107 +460,187 @@ export class ShowcaseScene {
 
   private gesturePlan(t: number): void {
     this.gesture.visible = true;
-    const swing = Math.sin(t * 1.65 - 0.5);
-    this.position(this.phone, 1250, 570 + Math.sin(t * 0.9) * 13);
-    this.phone.rotation.set(0.04, -0.26 + swing * 0.14, swing * -0.17);
-    this.phone.scale.setScalar(1.12 * (0.85 + out(t / 0.5) * 0.15));
-    this.phoneCursor.position.set(swing * 40, 30 + Math.cos(t * 1.65) * 20, 20);
-    this.position(this.gestureTomato, 1650, 540 + Math.sin(t * 1.3) * 15);
-    this.gestureTomato.scale.setScalar(137);
-    const cut = t - 2.0;
-    this.gestureTomato.visible = cut < 0 || cut >= 1.25;
-    this.halo(this.cyanHalo, 1260, 585, 510, 650, 0.25);
-    this.halo(this.warmHalo, 1650, 540, 420, 420, 0.23);
-    if (t < 2) {
-      this.pathDots.forEach((dot, index) => {
-        const p = fraction(t * 0.8 + index / 4);
-        dot.visible = true;
-        this.position(dot, 1370 + p * 165, 560 - Math.sin(p * Math.PI) * 30, 70);
-        dot.scale.setScalar(3 + Math.sin(p * Math.PI) * 2);
-      });
-    }
-    this.sweep(cut + 0.3, 1650, 540, 320, -0.42);
-    this.cutTomato(cut, 1650, 540, 137);
+    this.phone.visible = true;
+    const swing = Math.sin((t - 0.15) * 2.2);
+    this.position(this.phone, 650 + swing * 35, 570 + Math.sin(t * 1.5) * 16);
+    this.phone.rotation.set(0.08, -0.3 + swing * 0.26, swing * -0.25);
+    this.phone.scale.setScalar(1.6 * (0.8 + out(t / 0.42) * 0.2));
+    this.phoneCursor.position.set(swing * 45, 30 + Math.cos(t * 2.2) * 30, 25);
+    const cut = t - 1.5;
+    this.position(this.gestureTomato, 1350, 520 + Math.sin(t * 2) * 9);
+    this.gestureTomato.rotation.set(1.05, -0.16, Math.sin(t * 2) * 0.1);
+    this.gestureTomato.scale.setScalar(230);
+    this.gestureTomato.visible = cut < 0;
+    this.halo(this.cyanHalo, 650, 570, 850, 1050, 0.3);
+    this.halo(this.warmHalo, 1350, 520, 700, 750, 0.3);
+    this.pathDots.forEach((dot, index) => {
+      const p = fraction(t * 1.1 + index / 4);
+      dot.visible = t < 1.5;
+      this.position(dot, 840 + p * 280, 550 - Math.sin(p * Math.PI) * 70, 70);
+      dot.scale.setScalar(4 + Math.sin(p * Math.PI) * 3);
+    });
+    this.sweep(cut + 0.18, 1350, 520, 700, -0.48);
+    this.cutFood(cut, 1350, 520, 230, 1, 1.2, 230);
+    this.burst(cut, 1350, 520, 0.95, 'food');
+    this.camera.position.x = Math.sin(t * 1.2) * 25;
+    this.camera.zoom = 1 + t * 0.018;
   }
 
-  private flightPose(t: number, index: number, speed = 1) {
-    const p = fraction((t * speed + [0.12, 0.2, 1.15, 1.95][index]) / 3.2);
+  private flightPose(t: number, i: number, speed = 1) {
+    const p = fraction((t * speed + [0.2, 0.5, 1.1, 1.8, 0.8, 2.4, 1.6, 2.9][i]) / 3.2);
     return {
-      x: [1160, 1425, 1575, 1715][index] + (p - 0.5) * (index % 2 ? -130 : 130),
-      y: 840 - 500 * 4 * p * (1 - p),
-      scale: [96, 111, 100, 103][index] * (0.28 + 0.72 * Math.sin(p * Math.PI) ** 0.4),
+      x: 320 + i * 175 + (p - 0.5) * (i % 2 ? -230 : 230),
+      y: 1000 - 700 * 4 * p * (1 - p),
+      scale: (i < 4 ? 145 : 105) * (0.3 + Math.sin(p * Math.PI) ** 0.4 * 0.7),
       p,
     };
   }
 
-  private showFlights(t: number, speed: number, hideTomato = false): void {
+  private showFlights(t: number, speed: number): void {
     this.flight.visible = true;
-    this.flightFoods.forEach((food, index) => {
-      const p = this.flightPose(t, index, speed);
-      food.visible = !(hideTomato && index === 1);
-      this.position(food, p.x, p.y, index % 2 ? -35 : 10);
+    this.flightFoods.forEach((food, i) => {
+      const p = this.flightPose(t, i, speed);
+      food.visible = true;
+      this.position(food, p.x, p.y, i % 2 ? -80 : -20);
       food.scale.setScalar(p.scale);
       food.rotation.set(
-        1.05 + Math.sin(p.p * TAU) * 0.1,
-        Math.sin(p.p * TAU + index) * 0.25,
-        Math.sin(p.p * TAU) * 0.35,
+        1.05 + Math.sin(p.p * TAU) * 0.2,
+        p.p * 1.5 + i,
+        Math.sin(p.p * TAU) * 0.65,
       );
     });
   }
 
   private cutPlan(t: number): void {
-    const impact = 1.4;
-    const cut = t - impact;
-    const target = this.flightPose(impact, 1);
-    this.showFlights(t, 1, cut >= 0 && cut < 1.25);
-    this.halo(this.warmHalo, 1460, 590, 780, 720, 0.2);
-    this.sweep(cut + 0.3, target.x, target.y, 620, -0.42);
-    this.cutTomato(cut, target.x, target.y, target.scale);
-    if (t > 3.4) {
-      const p = smooth((t - 3.4) / 0.5);
-      this.blade.visible = this.bladeGlow.visible = t < 4.2;
-      this.slashPose(
-        1150 + p * 620,
-        770 - p * 270,
-        260,
-        -0.42,
-        Math.sin(clamp((t - 3.4) / 0.8) * Math.PI),
-      );
-    }
+    this.showFlights(t, 1.15);
+    const times = [1.5, 0.5, 3.25, 2.5];
+    const positions = [
+      [1250, 550],
+      [480, 425],
+      [1450, 410],
+      [820, 630],
+    ];
+    let recent = Infinity;
+    let recentIndex = 0;
+    this.flightFoods.slice(0, 4).forEach((food, i) => {
+      const age = t - times[i];
+      const [x, y] = positions[i];
+      const lead = Math.max(0, -age);
+      food.visible = age < 0;
+      this.position(food, x + Math.sin(lead * 1.2) * 110, y + lead * lead * 130, 70);
+      food.scale.setScalar(158);
+      food.rotation.set(1.05, -0.16, -0.09 + lead * 0.5);
+      this.cutFood(age, x, y, 158, i, 0.95, 220);
+      if (age >= -0.18 && age < recent) {
+        recent = age;
+        recentIndex = i;
+      }
+    });
+    const [x, y] = positions[recentIndex];
+    this.sweep(recent + 0.18, x, y, 920, recentIndex % 2 ? -0.55 : 0.43);
+    this.burst(recent, x, y, 1.05, 'food');
+    this.halo(this.warmHalo, 960, 570, 1800, 1000, 0.24);
+    this.camera.position.x = -75 + t * 37;
+    this.camera.position.y = Math.sin(t * 1.4) * 30;
+    this.camera.rotation.z = Math.sin(t * 1.35) * 0.025;
+    this.camera.zoom = 1.02 + Math.sin(t * 0.9) * 0.075;
+  }
+
+  private danger(t: number): void {
+    const impact = t - 0.9;
+    this.bomb.visible = impact < 0;
+    this.position(this.bomb, 960 + Math.sin(t * 48) * smooth((t - 0.55) / 0.35) * 12, 555, 150);
+    this.bomb.scale.setScalar(160 + out(t / 0.85) * 150);
+    this.bomb.rotation.set(0.06, Math.sin(t * 3) * 0.15, Math.sin(t * 40) * 0.055);
+    this.showFlights(t * 0.3, 1);
+    this.flightFoods.forEach((food, i) => {
+      const a = (i * TAU) / 8 + 0.35;
+      const radius = 340 + Math.max(0, impact) * 850;
+      this.position(food, 960 + Math.cos(a) * radius, 550 + Math.sin(a) * radius * 0.75, -80);
+      food.scale.setScalar(90 * (1 - smooth(Math.max(0, impact) / 1.2) * 0.5));
+      food.rotation.set(1.05 + impact, i, a + Math.max(0, impact) * 4);
+    });
+    this.halo(
+      this.warmHalo,
+      960,
+      560,
+      1200,
+      1150,
+      0.3 + Math.max(0, 1 - Math.abs(impact) * 4) * 0.45,
+    );
+    this.burst(impact, 960, 550, 2.4, 'danger');
+    this.ripple(impact, 960, 550, '#ff9955', 900);
+    this.camera.zoom = 1 + Math.sin(clamp(impact / 0.45) * Math.PI) * 0.07;
+    this.camera.rotation.z = Math.sin(impact * 24) * Math.max(0, 1 - Math.abs(impact) * 3) * 0.025;
   }
 
   private frenzy(t: number): void {
-    this.rare.visible = true;
-    this.showFlights(t + 0.4, RUSH_WORLD_SPEED);
-    this.flightFoods[1].visible = false;
-    const pulse = Math.sin(t * 2.4) * 0.5 + 0.5;
-    this.position(this.rareTomato, 1445, 570 + Math.sin(t * 1.3) * 18, 100);
-    this.rareTomato.scale.setScalar(153 * (0.92 + out(t / 0.45) * 0.08));
-    this.rareTomato.rotation.z = Math.sin(t) * 0.12;
-    this.position(this.shieldStar, 1740, 485 + Math.sin(t * 1.8) * 21, 110);
-    this.shieldStar.scale.setScalar(70);
-    this.shieldStar.rotation.set(0.08, Math.sin(t * 1.6) * 0.25, Math.sin(t * 1.1) * 0.12);
-    this.halo(this.warmHalo, 1445, 570, 570 + pulse * 45, 570 + pulse * 45, 0.62);
-    this.halo(this.cyanHalo, 1740, 485, 280, 310, 0.32);
+    this.rare.visible = this.rareTomato.visible = true;
+    this.showFlights(t + 0.6, 2.7);
+    const beat = fraction(t * 2);
+    const firstHit = t >= 0.5;
+    const hit = firstHit ? beat * 0.5 : -1;
+    const pulse = firstHit ? Math.exp(-beat * 7) : 0;
+    this.position(this.rareTomato, 960, 550 + Math.sin(t * 3) * 10, 210);
+    this.rareTomato.scale.setScalar(340 * (1 + pulse * 0.07));
+    this.rareTomato.rotation.set(
+      1.05 + Math.sin(t * 2) * 0.05,
+      -0.16 + Math.sin(t) * 0.13,
+      Math.sin(t * 3) * 0.06,
+    );
+    this.halo(this.warmHalo, 960, 550, 1150 + pulse * 180, 1150 + pulse * 180, 0.67);
     this.goldSparks.forEach((sparkle, i) => {
-      const angle = i * 2.39996 + t * (0.35 + seed(i + 1) * 0.25);
-      const radius = 135 + seed(i + 28) * 85;
+      sparkle.visible = true;
+      const angle = i * 2.39996 + t * (0.6 + seed(i + 1) * 0.5);
+      const radius = 300 + seed(i + 28) * 210 + pulse * 55;
       this.position(
         sparkle,
-        1445 + Math.cos(angle) * radius,
-        570 + Math.sin(angle) * radius * 0.92,
-        70 + Math.cos(angle) * 70,
+        960 + Math.cos(angle) * radius,
+        550 + Math.sin(angle) * radius * 0.83,
+        230 + Math.cos(angle) * 65,
       );
-      sparkle.rotation.set(t + i, i, angle);
-      const size = 3 + 4 * (0.5 + Math.sin(t * 2 + i) * 0.5);
-      sparkle.scale.set(size, size * 1.7, size);
+      sparkle.rotation.set(t * 2 + i, i, angle);
+      const size = 5 + 5 * (0.5 + Math.sin(t * 3 + i) * 0.5);
+      sparkle.scale.set(size, size * 2.2, size);
     });
     this.speedMarks.forEach((mark, i) => {
-      const p = fraction(t * 0.95 + seed(i + 80));
-      this.position(mark, 1050 + p * 720, 245 + seed(i + 100) * 590, -180);
-      mark.rotation.z = 0.2;
-      mark.scale.set(48 + seed(i + 140) * 83, 1.7 + seed(i) * 2.5, 1);
+      mark.visible = true;
+      const p = fraction(t * 1.6 + seed(i + 80));
+      this.position(mark, -150 + p * 2220, 180 + seed(i + 100) * 720, -180);
+      mark.rotation.z = 0.16;
+      mark.scale.set(130 + seed(i + 140) * 170, 3 + seed(i) * 3, 1);
     });
+    if (firstHit) {
+      this.sweep(hit + 0.08, 960, 550, 1100, Math.floor(t * 2) % 2 ? -0.5 : 0.5);
+      this.burst(hit, 960, 550, 1.6, 'gold');
+    }
+    this.camera.zoom = 1 + pulse * 0.025;
+    this.camera.rotation.z = Math.sin(t * 1.5) * 0.018;
+  }
+
+  private shield(t: number): void {
+    this.rare.visible = this.shieldStar.visible = true;
+    const entry = out(t / 0.5);
+    const impact = t - 1;
+    this.position(this.shieldStar, 960, 555, 100);
+    this.shieldStar.scale.setScalar(
+      260 * (0.65 + entry * 0.35) * (1 + Math.exp(-Math.abs(impact) * 7) * 0.055),
+    );
+    this.shieldStar.rotation.set(0.08, Math.sin(t * 2) * 0.2, Math.sin(t * 1.6) * 0.07);
+    this.shieldShell.visible = true;
+    this.position(this.shieldShell, 960, 555, 0);
+    this.shieldShell.scale.setScalar(365 * (0.5 + entry * 0.5));
+    (this.shieldShell.material as THREE.MeshPhysicalMaterial).opacity =
+      0.1 + Math.exp(-Math.abs(impact) * 6) * 0.18;
+    this.bomb.visible = t < 1.23;
+    const x = impact < 0 ? 1780 - smooth(t) * 485 : 1295 + out(impact / 0.23) * 180;
+    this.position(this.bomb, x, 480 - Math.max(0, impact) * 270, 140);
+    this.bomb.scale.setScalar(125 * (1 - smooth(Math.max(0, impact) / 0.3) * 0.8));
+    this.bomb.rotation.set(0, -0.2, -t * 1.5);
+    this.halo(this.cyanHalo, 960, 555, 1300, 1200, 0.56);
+    this.ripple(impact, 960, 555, '#adfff3', 650);
+    this.burst(impact, 1295, 480, 1.5, 'cyan');
+    this.camera.zoom = 0.94 + entry * 0.06;
   }
 
   private buildBowl(): void {
@@ -521,48 +689,125 @@ export class ShowcaseScene {
 
   private mixing(t: number): void {
     this.mix.visible = true;
-    this.position(this.mix, 1445, 820 + Math.sin(t * 2) * 3);
-    this.mix.rotation.set(0.4, Math.sin(t * 0.7) * 0.045, 0);
-    this.mix.scale.setScalar(104 * (0.88 + out(t / 0.55) * 0.12));
-    const angle = t * 6.3 + t * t * 0.35;
+    this.position(this.mix, 960, 855 + Math.sin(t * 4) * 8);
+    this.mix.rotation.set(
+      0.42 + smooth(t / 3) * 0.18,
+      Math.sin(t * 1.4) * 0.13,
+      Math.sin(t * 3) * 0.055,
+    );
+    this.mix.scale.setScalar(150 + out(t / 0.5) * 12);
+    const angle = t * 4 + t * t * 2.6;
     this.bowlFoods.rotation.y = angle;
-    this.whisk.position.set(Math.sin(angle) * 0.62, 1.55, Math.cos(angle) * 0.62);
-    this.whisk.rotation.set(Math.sin(angle) * 0.22, -angle, -0.25 + Math.cos(angle) * 0.18);
-    this.halo(this.cyanHalo, 1445, 620, 650, 600, 0.3);
-    this.halo(this.contactShadow, 1445, 925, 650, 65, 0.5);
+    this.whisk.position.set(Math.sin(angle) * 0.72, 1.55, Math.cos(angle) * 0.72);
+    this.whisk.rotation.set(Math.sin(angle) * 0.3, -angle, -0.27 + Math.cos(angle) * 0.2);
+    this.halo(this.cyanHalo, 960, 575, 1300, 1100, 0.39);
+    this.halo(this.contactShadow, 960, 1000, 1000, 80, 0.5);
     this.pathDots.forEach((dot, i) => {
       const a = angle * 0.5 + (i * Math.PI) / 2;
       dot.visible = true;
-      this.position(dot, 1445 + Math.cos(a) * 238, 630 + Math.sin(a) * 95, Math.sin(a) * 160);
-      dot.scale.setScalar(4 + (i % 2));
+      this.position(dot, 960 + Math.cos(a) * 400, 565 + Math.sin(a) * 170, Math.sin(a) * 260);
+      dot.scale.setScalar(6 + (i % 2) * 2);
     });
+    this.camera.position.x = Math.sin(t * 1.2) * 55;
+    this.camera.zoom = 0.94 + smooth(t / 3) * 0.1;
+    this.camera.rotation.z = Math.sin(t * 1.8) * 0.018;
+  }
+
+  private macroDishes(t: number): void {
+    this.recipes.visible = true;
+    const index = t < 1.3 ? 0 : t < 2.6 ? 1 : 2;
+    const local = t - index * 1.3;
+    this.dishes.forEach((dish, i) => {
+      dish.visible = i === index;
+      if (!dish.visible) return;
+      this.position(dish, 960 + (1 - out(local / 0.45)) * (i % 2 ? -130 : 130), 600, 0);
+      dish.scale.setScalar([164, 181, 170][i] * (0.94 + out(local / 0.7) * 0.06));
+      dish.rotation.set(
+        [0.02, 0.27, 0.13][i],
+        -0.4 + local * 0.42,
+        (1 - smooth(local / 0.7)) * (i % 2 ? 0.07 : -0.06),
+      );
+    });
+    this.halo(this.warmHalo, 960, 580, 1550, 1050, 0.4);
+    this.halo(this.contactShadow, 960, 930, 1250, 100, 0.45);
+    this.camera.zoom = 0.98 + local * 0.045;
+    this.camera.position.x = -35 + local * 55;
   }
 
   private recipePlan(t: number): void {
     this.recipes.visible = true;
     this.dishes.forEach((dish, i) => {
-      const entry = out((t - i * 0.15) / 0.65);
-      this.position(dish, [480, 960, 1440][i], 650 + (1 - entry) * 70 + Math.sin(t * 1.2 + i) * 7);
-      dish.scale.setScalar(76 * (0.68 + entry * 0.32));
-      dish.rotation.y = Math.sin(t * 0.55 + i) * 0.1;
-      dish.rotation.z = (1 - entry) * (i - 1) * 0.08;
+      dish.visible = true;
+      const entry = out((t - i * 0.1) / 0.5);
+      this.position(dish, [430, 960, 1490][i], 680 + (1 - entry) * 90 + Math.sin(t * 1.5 + i) * 10);
+      dish.scale.setScalar(87 * (0.82 + entry * 0.18));
+      dish.rotation.set(0, Math.sin(t * 0.6 + i) * 0.13, (1 - entry) * (i - 1) * 0.08);
     });
-    this.halo(this.warmHalo, 960, 670, 1500, 520, 0.21);
+    this.halo(this.warmHalo, 960, 680, 1900, 850, 0.32);
+    this.camera.zoom = 1 + Math.sin(t * 0.7) * 0.018;
   }
 
-  private finalPlan(t: number): void {
-    this.heroPose(t + 4, 0.12 * (1 - smooth(t / 1.0)), 115 * (0.92 + out(t / 0.65) * 0.08));
-    const poses = [
-      [1130, 420, 59],
-      [1760, 410, 53],
-      [1740, 730, 60],
-    ];
-    this.finaleFoods.forEach((food, i) => {
-      const [x, y, scale] = poses[i];
-      food.visible = true;
-      this.position(food, x + Math.sin(t * 0.8 + i) * 16, y + Math.cos(t * 1.1 + i) * 18, 20);
-      food.scale.setScalar(scale * (0.8 + out((t - i * 0.12) / 0.7) * 0.2));
-      food.rotation.z = Math.sin(t * 0.8 + i) * 0.2;
+  private loop(t: number): void {
+    this.flight.visible = true;
+    const close = smooth((t - 1.1) / 1.4);
+    this.flightFoods.forEach((food, i) => {
+      const a = (i * TAU) / 8 + t * 2.4;
+      const radius = 440 + t * 180;
+      food.visible = t < 2.2;
+      this.position(
+        food,
+        960 + Math.cos(a) * radius,
+        540 + Math.sin(a) * radius * 0.67,
+        -100 + t * 180,
+      );
+      food.rotation.set(1.05 + t * 0.4, a, a * 0.4);
+      food.scale.setScalar((85 + t * 75) * (1 - smooth((t - 1.7) / 0.5)));
+    });
+    this.gesture.visible = true;
+    this.phone.visible = false;
+    this.gestureTomato.visible = true;
+    this.position(this.gestureTomato, 960, 540, 400 - close * 320);
+    this.gestureTomato.scale.setScalar(60 + close * 245);
+    this.gestureTomato.rotation.set(1.05, -0.16, -0.09 + (1 - close) * 1.2);
+    this.halo(this.warmHalo, 960, 540, 1250, 1150, 0.35 + close * 0.13);
+    this.camera.rotation.z = Math.sin((t * Math.PI) / 2.5) * 0.055;
+  }
+
+  private ripple(t: number, x: number, y: number, color: string, radius: number): void {
+    if (t < 0 || t > 0.85) return;
+    this.impactRing.visible = true;
+    this.position(this.impactRing, x, y, 350);
+    this.impactRing.scale.setScalar(70 + out(t / 0.85) * radius);
+    const material = this.impactRing.material as THREE.MeshBasicMaterial;
+    material.color.set(color);
+    material.opacity = (1 - t / 0.85) * 0.55;
+  }
+
+  private burst(
+    t: number,
+    x: number,
+    y: number,
+    strength: number,
+    theme: 'food' | 'gold' | 'danger' | 'cyan',
+  ): void {
+    if (t < 0 || t >= 0.85) return;
+    this.fragments.forEach((fragment, i) => {
+      fragment.visible = true;
+      fragment.material =
+        this.fragmentMaterials[
+          theme === 'food' ? i % 3 : theme === 'gold' ? 4 : theme === 'cyan' ? 5 : 6 + (i % 2)
+        ];
+      const a = seed(i + 21) * TAU;
+      const speed = (180 + seed(i + 55) * 360) * strength;
+      this.position(
+        fragment,
+        x + Math.cos(a) * speed * t,
+        y + Math.sin(a) * speed * t + t * t * 230,
+        420 + seed(i + 20) * 25,
+      );
+      fragment.rotation.set(i + t * 4, i * 2 + t, a + t * (i % 2 ? 5 : -5));
+      const size = (7 + seed(i + 99) * 11) * (1 - t / 0.85) * Math.min(1.5, strength);
+      fragment.scale.set(size, size * 0.6, size);
     });
   }
 
@@ -589,53 +834,57 @@ export class ShowcaseScene {
   }
 
   private buildCutHalves(): void {
-    for (const side of [-1, 1]) {
-      const object = new THREE.Group();
-      const model = this.food('tomato');
-      const plane = new THREE.Plane(new THREE.Vector3(side, 0, 0), 0);
-      const copied = new Map<THREE.Material, THREE.Material>();
-      model.traverse((node) => {
-        if (!(node instanceof THREE.Mesh)) return;
-        const source = node.material as THREE.MeshStandardMaterial;
-        let material = copied.get(source);
-        if (!material) {
-          material = source.clone();
-          material.clippingPlanes = [plane];
-          copied.set(source, material);
-          this.ownedMaterials.push(material);
-        }
-        node.material = material;
-      });
-      object.add(model);
-      this.halves.push({ object, plane, side });
-      this.scene.add(object);
+    for (const kind of ['bread', 'tomato', 'lettuce', 'cheese'] as const) {
+      const pair: CutHalf[] = [];
+      for (const side of [-1, 1]) {
+        const object = new THREE.Group();
+        const model = this.food(kind);
+        const plane = new THREE.Plane(new THREE.Vector3(side, 0, 0), 0);
+        const copied = new Map<THREE.Material, THREE.Material>();
+        model.traverse((node) => {
+          if (!(node instanceof THREE.Mesh)) return;
+          const source = node.material as THREE.MeshStandardMaterial;
+          let material = copied.get(source);
+          if (!material) {
+            material = source.clone();
+            material.clippingPlanes = [plane];
+            copied.set(source, material);
+            this.ownedMaterials.push(material);
+          }
+          node.material = material;
+        });
+        object.add(model);
+        const half = { object, plane, side };
+        pair.push(half);
+        this.halves.push(half);
+        this.scene.add(object);
+      }
+      this.cutPairs.push(pair);
     }
   }
 
-  private cutTomato(t: number, x: number, y: number, scale: number): void {
-    if (t < 0 || t >= 1.25) return;
-    const life = clamp(t / 1.25);
-    for (const half of this.halves) {
+  private cutFood(
+    t: number,
+    x: number,
+    y: number,
+    scale: number,
+    pair: number,
+    duration: number,
+    speed: number,
+  ): void {
+    if (t < 0 || t >= duration) return;
+    const life = clamp(t / duration);
+    for (const half of this.cutPairs[pair]) {
       half.object.visible = true;
-      this.position(half.object, x - half.side * (18 + t * 115), y - t * 105 + t * t * 155, t * 20);
-      half.object.scale.setScalar(scale * (1 - smooth((life - 0.55) / 0.45) * 0.92));
-      half.object.rotation.set(t * half.side * 0.22, t * half.side * 0.25, t * half.side * 0.8);
-    }
-    this.fragments.forEach((fragment, i) => {
-      fragment.visible = t < 0.95;
-      if (!fragment.visible) return;
-      const angle = seed(i + 21) * TAU;
-      const speed = 70 + seed(i + 55) * 170;
       this.position(
-        fragment,
-        x + Math.cos(angle) * speed * t,
-        y + Math.sin(angle) * speed * t + t * t * 160,
-        80 + seed(i + 20) * 25,
+        half.object,
+        x - half.side * (12 + t * speed),
+        y - t * 130 + t * t * 260,
+        120 + t * 60,
       );
-      fragment.rotation.set(i + t * 3, i * 2 + t, angle + t * (i % 2 ? 4 : -4));
-      const size = (5 + seed(i + 99) * 8) * (1 - t / 0.95);
-      fragment.scale.set(size, size * 0.7, size);
-    });
+      half.object.scale.setScalar(scale * (1 - smooth((life - 0.38) / 0.62) * 0.98));
+      half.object.rotation.set(t * half.side * 0.38, t * half.side * 0.4, t * half.side * 0.9);
+    }
   }
 
   dispose(): void {

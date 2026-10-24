@@ -2,6 +2,13 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 25 octobre 2026 — Un montage plus rythmé pour le stand
+
+- Le film conserve ses 32 secondes, réparties en onze séquences plus courtes. Gros plans sur les ingrédients, mouvements de caméra, découpes et grands titres rythment la présentation du geste, des pièges, de la frénésie, du bouclier et du mélange.
+- Les vrais modèles 3D du jeu restent au centre du montage. La première coupe est synchronisée avec son impact sonore et la démonstration de bombe retire bien deux cœurs.
+- La bande-son originale est refaite avec une progression musicale et des bruitages accordés aux actions. Le lecteur reste silencieux par défaut, avec activation explicite du son.
+- L’export destiné au stand passe par 960 images calculées à des instants fixes et une piste audio produite hors temps réel, puis par un encodage H.264/AAC. Le studio `/film` conserve aussi son export natif dans le navigateur.
+
 ## 24 octobre 2026 — Un film en boucle pour le stand
 
 - Ajout d’un film de présentation de 32 secondes : vrais ingrédients et plats 3D, téléphone animé, découpe, frénésie, mélange et invitation à jouer. Le montage reprend les couleurs du jeu et l’identité du Lycée Guy Mollet à Arras, avec de grands titres et une bande-son originale synthétisée.

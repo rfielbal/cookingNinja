@@ -42,7 +42,11 @@ Le serveur écoute aussi sur le réseau local pour permettre l’appairage. Les 
 
 Depuis l’accueil, ouvrir **Mode stand**, ou charger `/?stand=1`. Le film tourne en boucle sans son ; les commandes permettent d’activer sa bande-son, de mettre en pause, de passer en plein écran et de télécharger la vidéo. **Jouer**, **Échap** ou **Entrée** lorsque le fond a le focus ramènent à l’accueil. Le salon et le téléphone associé restent connectés ; aucune partie ni aucun score ne sont créés par la présentation. **Les coulisses** ouvre l’atelier dans un nouvel onglet.
 
-Le lecteur utilise `public/media/cookingninja-stand.mp4`, servi à `/media/cookingninja-stand.mp4`. La source animée et son export sont accessibles sur `/film` : ouvrir cette page dans un navigateur compatible, choisir **Exporter le film**, garder l’onglet visible puis télécharger le résultat. Le rendu cible **32 secondes, 1920 × 1080 et 30 images/s**, avec une bande-son originale intégrée ; vérifier la lecture du fichier produit avant de remplacer le MP4 et de reconstruire le jeu. Selon le navigateur, l’export peut proposer du WebM : ne pas renommer ce fichier en MP4. Les vérifications du fichier livré sont consignées dans [le compte rendu de validation](docs/validation.md).
+Le montage réunit **onze séquences courtes en 32 secondes** : gros plans sur les vrais aliments 3D, geste du téléphone, découpes, piège, frénésie, bouclier, mélange et plats terminés. Les grands titres accompagnent l’action ; une bande-son originale refaite associe musique et bruitages aux temps forts.
+
+Le lecteur utilise `public/media/cookingninja-stand.mp4`, servi à `/media/cookingninja-stand.mp4`. Le fichier destiné au stand est produit image par image, avec une piste audio calculée séparément, puis encodé en H.264/AAC. La cible est **1920 × 1080 à 30 images/s** ; [l’architecture](docs/architecture.md#présentation-vidéo-du-stand) décrit cette méthode d’export.
+
+La source animée reste accessible sur `/film`. Le bouton **Exporter le film** propose un autre parcours : une capture native dans le navigateur, en gardant l’onglet visible. Sa cadence et sa durée doivent être vérifiées avant de remplacer le MP4 et de reconstruire le jeu. Selon le navigateur, cet export peut produire du WebM : ne pas renommer ce fichier en MP4. Les vérifications du fichier livré sont consignées dans [le compte rendu de validation](docs/validation.md).
 
 ## Jouer au gyroscope
 
