@@ -5,6 +5,7 @@ Un jeu de cuisine en 3D dans le navigateur : le téléphone devient une manette 
 ## Version salon
 
 - Accueil interactif et sélection de recette avec aperçu 3D.
+- **Mode stand** depuis l’accueil : film en boucle, silencieux par défaut, son facultatif et retour au jeu sans recréer le salon.
 - Calibration guidée, viseur visible et essai facultatif avant le chronomètre : couper deux ingrédients de la recette, puis laisser passer un piège.
 - Après le choix de la recette et du pseudo sur le PC, lancement, pause et reprise depuis le téléphone.
 - Diagnostic compact de connexion : relais, téléphone associé et commandes récentes côté PC ; contexte sécurisé, capteurs et centrage vérifiés sur le téléphone. Les détails restent repliables.
@@ -36,6 +37,12 @@ npm run dev
 Ouvrir **http://localhost:5173** sur le PC. Sélectionner une recette, choisir **Souris**, puis **C’est parti, chef !**. Maintenir le clic et glisser pour couper. Pour mélanger, maintenir le clic et faire des cercles.
 
 Le serveur écoute aussi sur le réseau local pour permettre l’appairage. Les adresses disponibles sont imprimées dans le terminal. `HOST=127.0.0.1 npm run dev` limite l’accès au PC uniquement.
+
+## Présenter le jeu entre deux visiteurs
+
+Depuis l’accueil, ouvrir **Mode stand**, ou charger `/?stand=1`. Le film tourne en boucle sans son ; les commandes permettent d’activer sa bande-son, de mettre en pause, de passer en plein écran et de télécharger la vidéo. **Jouer**, **Échap** ou **Entrée** lorsque le fond a le focus ramènent à l’accueil. Le salon et le téléphone associé restent connectés ; aucune partie ni aucun score ne sont créés par la présentation. **Les coulisses** ouvre l’atelier dans un nouvel onglet.
+
+Le lecteur utilise `public/media/cookingninja-stand.mp4`, servi à `/media/cookingninja-stand.mp4`. La source animée et son export sont accessibles sur `/film` : ouvrir cette page dans un navigateur compatible, choisir **Exporter le film**, garder l’onglet visible puis télécharger le résultat. Le rendu cible **32 secondes, 1920 × 1080 et 30 images/s**, avec une bande-son originale intégrée ; vérifier la lecture du fichier produit avant de remplacer le MP4 et de reconstruire le jeu. Selon le navigateur, l’export peut proposer du WebM : ne pas renommer ce fichier en MP4. Les vérifications du fichier livré sont consignées dans [le compte rendu de validation](docs/validation.md).
 
 ## Jouer au gyroscope
 
@@ -183,6 +190,10 @@ src/game/AtelierScene.ts  Illustrations 3D isolées avec les modèles du jeu
 src/components/ArcadeMenu.tsx  Menu de jeu et sélection
 src/components/PracticeRange.tsx  Essai des gestes
 src/components/ResultDiscovery.tsx  Invitation facultative vers l’atelier après la partie
+src/components/StandMode.tsx  Lecture du film sans fermer le salon
+src/ShowcaseFilm.tsx     Prévisualisation et export sur /film
+src/showcase/           Montage, rendu composite et bande-son du film
+public/media/cookingninja-stand.mp4  Film lu par le mode stand
 src/components/BladePicker.tsx  Sélecteur de lame côté PC
 src/dojo.css            Palette commune et animations des écrans PC
 tests/                  Règles, gyroscope, classement et réseau

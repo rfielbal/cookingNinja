@@ -51,6 +51,12 @@ Le téléphone peut utiliser le pavé tactile sur le même réseau local en HTTP
 
 En cas d’échec des permissions ou de capteur absent, proposer ce secours rapidement avec le sélecteur **Gyroscope / Tactile**, toujours accessible sur le téléphone connecté. Choisir la commande avant le départ et la conserver pendant cette partie ; les classements réunissent toutes les commandes. Un changement en cours de jeu met la partie en pause : elle peut reprendre mais devient une partie libre, hors classement, même en revenant au mode initial. Pour un score classé en tactile, démarrer une nouvelle partie dans ce mode. Ne pas retarder toute la file pour un téléphone incompatible.
 
+## Attirer les visiteurs avec le mode stand
+
+Depuis l’accueil du PC, choisir **Mode stand** ; `/?stand=1` permet aussi de l’ouvrir directement. La vidéo boucle en silence par défaut. Activer le son seulement si le contexte du salon le permet, régler le volume du PC et utiliser le bouton de plein écran si utile. **Jouer**, **Échap** ou **Entrée** lorsque le fond a le focus reviennent à l’accueil sans recréer le salon ni détacher le téléphone. La présentation ne lance aucune partie et n’inscrit aucun score. **Les coulisses** ouvre le guide dans un nouvel onglet.
+
+Le fichier local `public/media/cookingninja-stand.mp4` peut être téléchargé depuis le lecteur. Pour le régénérer, ouvrir `/film`, lancer l’export et garder l’onglet visible jusqu’au téléchargement. Le montage cible 32 secondes en 1080p à 30 images/s ; contrôler le fichier réellement produit, sa bande-son et sa boucle sur l’écran du stand avant l’événement. Si l’export fournit un WebM, ne pas le renommer en MP4. La vidéo est une présentation montée, pas l’enregistrement d’une partie d’un visiteur.
+
 ## Le passage d’un visiteur
 
 Prévoir au départ **un créneau de 2 à 3 minutes**, incluant appairage, explication, jeu et relève. C’est une hypothèse d’organisation à mesurer, pas un débit constaté. La partie comporte 3 secondes de décompte, 80 secondes de découpe et, si les ingrédients sont prêts, 8 secondes de mélange. Les deux défis d’ingrédients brillants peuvent ajouter jusqu’à 6 secondes en figeant le chronomètre de recette. Prévoir séparément le temps de découverte pédagogique si le visiteur souhaite rester.
@@ -82,6 +88,7 @@ L’écriture par remplacement atomique réduit le risque de document partiellem
 ## Checklist de répétition
 
 - [ ] Exécuter types, tests, build et vérification de formatage sur la version qui sera présentée.
+- [ ] Lire le film en boucle, tester le son facultatif, le plein écran et la sortie vers le jeu avec un téléphone déjà associé ; vérifier que le salon est conservé et qu’aucune partie n’est lancée pendant la présentation.
 - [ ] Depuis un résultat, ouvrir le diaporama dans un nouvel onglet, parcourir ses six étapes avec les boutons et le clavier, ouvrir le volet de code et retrouver le résultat intact dans l’onglet d’origine.
 - [ ] Essayer au moins un iPhone et un Android disponibles, noter modèle, navigateur et résultat réellement observé.
 - [ ] Lire le diagnostic sur chaque écran, actualiser le lien et vérifier qu’un QR périmé ou localhost n’est pas proposé pendant une coupure.

@@ -1,3 +1,19 @@
+# Film et mode stand — 24 octobre 2026
+
+Les essais du développement utilisent `/tmp/cookingninja-film-oct23-qa`, séparé des scores réels. La vérification finale du lecteur utilise le build de production déjà servi sur **5174**, sans lancement de partie ni redémarrage du serveur ou du tunnel.
+
+- **136 tests réussis**, TypeScript, build de production et vérification Prettier réussis. Aucun changement du traitement tactile, du gyroscope, des règles ou du stockage des classements.
+- Les sept plans ont été inspectés dans Chromium, avec les vrais modèles de `FoodFactory` : burger, geste du téléphone, ingrédients en vol et coupe, frénésie, bol, trois plats, invitation à jouer. Le film est une mise en scène autonome, sans partie ni score fictif enregistré.
+- MP4 livré : **1920 × 1080, H.264 Baseline/yuv420p, 960 images à 30 images/s, 32 secondes**, AAC stéréo 48 kHz, **26 826 641 octets**. Les métadonnées et le décodage complet ont été contrôlés avec FFmpeg/ffprobe 7.1.1. Après capture native par Chromium, les timestamps ont été régularisés sans réencodage et le fichier a été placé en faststart. Le studio `/film` produit un export natif : sa durée et sa cadence restent à vérifier lors d’une nouvelle génération.
+- Dans le lecteur : démarrage muet, lecture en boucle, pause, activation du son et retour par Jouer vérifiés. Le signal audio décodé présente un pic non nul d’environ **0,063** dans un analyseur Web Audio ; cela prouve la présence du signal dans le navigateur, pas son volume perçu sur les haut-parleurs du salon.
+- Test avec une manette **simulée** et un vrai WebSocket local : le code de salon et les connexions sont conservés à l’ouverture puis à la fermeture du film. Les messages de lancement, reprise et mouvement envoyés pendant la présentation laissent l’état à `menu`, `canStart=false`, `canResume=false`, trois cœurs et zéro point. **Aucune requête POST API** observée pendant ce parcours. Retour du focus sur Mode stand après Échap.
+- Deux défauts d’intégration ont été reproduits puis corrigés : Entrée fermait le lecteur et déclenchait également le raccourci du menu ; l’entrée en plein écran plaçait la racine du jeu au-dessus du dialogue dans la couche supérieure de Chromium. La propagation du raccourci est arrêtée et le dialogue repasse au premier plan après l’entrée en plein écran.
+- Contrôle final en production : vidéo visible en plein écran, commandes masquées après inactivité à la souris et conservées pendant la navigation clavier, aucun écran de chargement résiduel, lien des coulisses vers `/atelier#atelier-decouverte` dans un nouvel onglet, retour à l’accueil et **aucun `pageerror`**. Captures dans `output/playwright/film-*.png` et `stand-*.png`, hors dépôt.
+
+Ces essais couvrent Chromium sur ce Mac. Ils ne mesurent ni les capteurs d’un téléphone physique, ni la qualité de la sonorisation ou l’attractivité du film en situation de salon. Le MP4 et son affiche sont les médias livrés ; les journaux, captures et scores d’essai restent exclus du dépôt.
+
+---
+
 # Atelier en diaporama animé — 23 octobre 2026
 
 Le serveur d’essai utilise `/tmp/cookingninja-slideshow-oct23-qa`. Cette refonte porte sur l’atelier et son invitation après partie ; le contrôleur, le tutoriel de jeu et les règles de score restent inchangés.

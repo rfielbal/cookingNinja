@@ -36,6 +36,9 @@ Description du projet pour la démonstration BTS SIO du Lycée Guy Mollet, à Ar
 | `src/atelierSlides.ts`                    | Textes des six étapes, extraits ou versions simplifiées et liens vers les sources      |
 | `src/components/AtelierStage.tsx`         | Montage de la démonstration 3D, visibilité, redimensionnement et repli sans WebGL      |
 | `src/game/AtelierScene.ts`                | Illustrations 3D autonomes réutilisant les modèles de `FoodFactory`                    |
+| `src/components/StandMode.tsx`            | Lecteur vidéo du stand, commandes et cycle de vie du dialogue                          |
+| `src/ShowcaseFilm.tsx`                    | Studio `/film`, montage dans `src/showcase/` et export audio/vidéo                     |
+| `public/media/cookingninja-stand.mp4`     | Fichier vidéo servi au lecteur du stand                                                |
 
 ## Le trajet réel d’une coupe
 
@@ -197,6 +200,14 @@ Aucun compte, contact ou formulaire email n’est prévu. Chaque résultat conse
 `AtelierStage` monte et libère `AtelierScene`, observe la taille du conteneur et suspend l’animation lorsque l’onglet est masqué. La scène reçoit l’étape et les actions de démonstration ; elle ne lit aucun capteur, n’ouvre pas de connexion réseau et ne modifie pas les scores du stand. En mouvement réduit, elle présente une pose fixe, avec une courte animation possible sur une action explicite. Si WebGL est indisponible, les étapes et leurs textes restent accessibles.
 
 Avant la partie, `PracticeRange` propose un essai facultatif avec deux ingrédients de la recette à couper, puis un piège à laisser traverser l’écran. Couper ce piège recommence seulement son passage après un retour explicatif. L’exercice n’ajoute aucun point et ne retire aucune vie à la partie ; il peut être passé. Cette découverte des règles complète la calibration, elle ne la remplace pas.
+
+## Présentation vidéo du stand
+
+Depuis l’accueil, `StandMode` affiche un dialogue qui lit `/media/cookingninja-stand.mp4` en boucle, silencieusement par défaut. Le son, la pause, le plein écran et le téléchargement sont explicites. **Jouer**, **Échap** ou **Entrée** sur le fond ferment le dialogue ; le lien des coulisses ouvre un autre onglet. La lecture se suspend lorsque la page est masquée et reprend au retour si elle n’avait pas été mise en pause par l’utilisateur.
+
+`App` reste monté avec `useHost` : le salon existant est conservé. Un garde-fou synchrone bloque les mouvements et demandes de lancement/reprise pendant la présentation ; le téléphone reçoit la notice **Présentation sur le PC**. Le moteur et l’audio du jeu restent suspendus, aucun résultat n’est créé, et la sortie exige de nouvelles commandes pour retrouver l’état prêt.
+
+La route `/film` charge séparément le studio de génération. `FilmRenderer` compose les modèles 3D et les textes dans un seul canvas opaque ; `MediaRecorder` capture ce canvas avec une bande-son synthétisée par `OfflineAudioContext`. Le montage vise 32 secondes en 1920 × 1080 à 30 images/s. Le studio sélectionne un format pris en charge, MP4 H.264/AAC en priorité, puis WebM ; masquer l’onglet interrompt l’export. La lecture du stand utilise le fichier exporté et ne régénère pas ce rendu à chaque boucle. Le contrôleur mobile ne charge ni le studio ni Three.js. Vérifier l’encodage produit avant de remplacer le fichier de `public/media/` ; un format annoncé compatible ne garantit pas à lui seul la réussite de l’export.
 
 ## Vérifier sans confondre les preuves
 

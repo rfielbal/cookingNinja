@@ -15,7 +15,9 @@ const Screen = lazy(() =>
     ? import('./Controller')
     : location.pathname === '/atelier'
       ? import('./Atelier')
-      : import('./App'),
+      : location.pathname === '/film'
+        ? import('./ShowcaseFilm')
+        : import('./App'),
 );
 
 createRoot(document.getElementById('root')!).render(

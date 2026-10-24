@@ -2,6 +2,13 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 24 octobre 2026 — Un film en boucle pour le stand
+
+- Ajout d’un film de présentation de 32 secondes : vrais ingrédients et plats 3D, téléphone animé, découpe, frénésie, mélange et invitation à jouer. Le montage reprend les couleurs du jeu et l’identité du Lycée Guy Mollet à Arras, avec de grands titres et une bande-son originale synthétisée.
+- Le bouton « Mode stand » lance le MP4 local en boucle, sans son par défaut. Lecture, son, plein écran, téléchargement et accès aux coulisses sont disponibles ; les commandes se masquent au repos. Jouer, Entrée ou Échap permettent de retrouver l’accueil.
+- Le salon et la connexion du téléphone restent ouverts derrière le film. La scène de jeu est suspendue et les commandes de partie sont ignorées pendant la présentation. Le raccourci Entrée est arrêté dans le lecteur pour ne pas déclencher aussi celui du menu.
+- Un studio séparé, `/film`, permet de revoir les sept plans et de régénérer la vidéo avec sa bande-son. Le lecteur du stand utilise le fichier exporté : il ne recalcule pas les animations 3D du film à chaque boucle.
+
 ## 23 octobre 2026 — L’atelier devient un diaporama visuel
 
 - Refonte de l’atelier en six étapes : geste, relais et QR, aliments 3D, coupe et règles, mélange, puis résultat et classement. Les explications courtes accompagnent les animations ; les boutons précédent/suivant et le clavier permettent d’avancer à son rythme.

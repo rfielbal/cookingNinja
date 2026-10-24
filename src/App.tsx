@@ -14,6 +14,7 @@ import {
   Clock3,
   Heart,
   Hourglass,
+  Film,
   Bomb,
   Snowflake,
   Star,
@@ -43,6 +44,7 @@ import { ArcadeMenu } from './components/ArcadeMenu';
 import { Leaderboard } from './components/Leaderboard';
 import { PracticeRange } from './components/PracticeRange';
 import { ResultDiscovery } from './components/ResultDiscovery';
+import { StandMode } from './components/StandMode';
 import { BladePicker } from './components/BladePicker';
 import { Celebration, ScoreCounter } from './components/Celebration';
 import { BLADES, DEFAULT_BLADE, isBladeId, type BladeId } from '../shared/blades';
@@ -70,6 +72,11 @@ function NinjaLogo() {
 
 export default function App() {
   const [view, setView] = useState<View>('home');
+  const [standActive, setStandActive] = useState(
+    () => new URLSearchParams(window.location.search).get('stand') === '1',
+  );
+  const standRef = useRef(standActive);
+  standRef.current = standActive;
   const [dialog, setDialog] = useState<Dialog>(null);
   const dialogRef = useRef(dialog);
   dialogRef.current = dialog;
@@ -129,6 +136,7 @@ export default function App() {
   useEffect(() => {
     // Touch activation arrives on release; keyboard shortcuts may target the body.
     const activate = (event: Event) => {
+      if (standRef.current) return;
       // Explicit audio controls own their gesture. Auto-unlocking before their
       // click could change "activate" into "mute" while the pointer is held.
       if (event.target instanceof Element && event.target.closest('[data-audio-control]')) return;
@@ -184,6 +192,7 @@ export default function App() {
   const stateRef = useRef(state);
   stateRef.current = state;
   const input = useCallback((data: MotionInput) => {
+    if (standRef.current) return;
     lastPhoneInput.current = performance.now();
     sourceKnown.current = data.source === 'motion' || data.source === 'touch';
     if (run.current && modeRef.current === 'phone' && !sourceKnown.current)
@@ -239,6 +248,37 @@ export default function App() {
     setState(null);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  const openStand = () => {
+    if (view !== 'home' || engine.current) return;
+    standRef.current = true;
+    setStandActive(true);
+    setDialog(null);
+    setPractice(false);
+    audioTestAttempt.current++;
+    audio.setPhase('paused');
+    audio.setMix(0);
+    scene.current?.setPaused(true);
+    pointer.current.at = 0;
+    motion.current = { energy: 0, at: 0 };
+    lastPhoneInput.current = -Infinity;
+    readiness.current = false;
+    setPhoneReady(false);
+  };
+  const closeStand = useCallback(() => {
+    standRef.current = false;
+    setStandActive(false);
+    pointer.current.at = 0;
+    motion.current = { energy: 0, at: 0 };
+    lastPhoneInput.current = -Infinity;
+    readiness.current = false;
+    setPhoneReady(false);
+    audio.setPhase('menu');
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('stand') === '1') {
+      url.searchParams.delete('stand');
+      history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
   const createGame = useCallback(() => {
     run.current = null;
     setSaveStatus('');
@@ -289,6 +329,7 @@ export default function App() {
       instance.setRecipe(recipe.id);
       audio.setRecipe(recipe.id);
       instance.setBlade(bladeRef.current);
+      instance.setPaused(standRef.current);
       if (view === 'game') createGame();
       return () => {
         instance.dispose();
@@ -302,8 +343,9 @@ export default function App() {
   }, [view, recipe.id, lowQuality, createGame]);
   useEffect(() => {
     // The exercise owns its own scene; keep the covered arena idle until it closes.
-    scene.current?.setPaused(practice || engine.current?.state.phase === 'paused');
-  }, [practice, state?.phase]);
+    scene.current?.setPaused(standActive || practice || engine.current?.state.phase === 'paused');
+    if (standActive) audio.setPhase('paused');
+  }, [standActive, practice, state?.phase]);
   useEffect(() => {
     let frame = 0,
       last = performance.now(),
@@ -320,6 +362,11 @@ export default function App() {
       if (receivingInput !== readiness.current) {
         readiness.current = receivingInput;
         setPhoneReady(receivingInput);
+      }
+      if (standRef.current) {
+        audio.setPhase('paused');
+        frame = requestAnimationFrame(loop);
+        return;
       }
       if (game) {
         if (game !== previousGame) {
@@ -399,6 +446,7 @@ export default function App() {
   }, []);
   const resume = () => {
     if (
+      standRef.current ||
       engine.current?.state.phase !== 'paused' ||
       document.hidden ||
       (modeRef.current === 'phone' &&
@@ -439,7 +487,13 @@ export default function App() {
   }, [dialog, host.connected, phoneReady]);
   const validNickname = /^[\p{L}\p{N} ._'’-]{2,20}$/u.test(nickname.trim().normalize('NFKC'));
   const remoteReady =
-    mode === 'phone' && host.connected && phoneReady && pageVisible && !dialog && !sceneError;
+    mode === 'phone' &&
+    host.connected &&
+    phoneReady &&
+    pageVisible &&
+    !dialog &&
+    !sceneError &&
+    !standActive;
   useEffect(() => {
     const s = stateRef.current;
     host.sendState({
@@ -453,25 +507,27 @@ export default function App() {
       starting,
       blade,
       controlMode: mode === 'mouse' ? 'mouse' : phoneSource,
-      notice: !pageVisible
-        ? 'Remettez le jeu au premier plan sur le PC.'
-        : dialog
-          ? 'Fermez la fenêtre ouverte sur le PC pour jouer.'
-          : mode === 'mouse'
-            ? 'Choisissez Téléphone dans la préparation sur le PC.'
-            : view !== 'game'
-              ? 'Choisissez une recette et votre pseudo sur le PC.'
-              : sceneError
-                ? 'La scène 3D est indisponible sur le PC.'
-                : !validNickname
-                  ? 'Vérifiez votre pseudo sur le PC.'
-                  : !phoneReady
-                    ? 'Préparez votre commande pour jouer.'
-                    : practice
-                      ? 'Entraînement sur le PC. Lancez quand vous êtes prêt.'
-                      : s?.phase === 'result'
-                        ? 'Rejouez ou choisissez une nouvelle recette sur le PC.'
-                        : '',
+      notice: standActive
+        ? 'Présentation sur le PC'
+        : !pageVisible
+          ? 'Remettez le jeu au premier plan sur le PC.'
+          : dialog
+            ? 'Fermez la fenêtre ouverte sur le PC pour jouer.'
+            : mode === 'mouse'
+              ? 'Choisissez Téléphone dans la préparation sur le PC.'
+              : view !== 'game'
+                ? 'Choisissez une recette et votre pseudo sur le PC.'
+                : sceneError
+                  ? 'La scène 3D est indisponible sur le PC.'
+                  : !validNickname
+                    ? 'Vérifiez votre pseudo sur le PC.'
+                    : !phoneReady
+                      ? 'Préparez votre commande pour jouer.'
+                      : practice
+                        ? 'Entraînement sur le PC. Lancez quand vous êtes prêt.'
+                        : s?.phase === 'result'
+                          ? 'Rejouez ou choisissez une nouvelle recette sur le PC.'
+                          : '',
     });
   }, [
     view,
@@ -492,10 +548,12 @@ export default function App() {
     sceneError,
     phoneReady,
     practice,
+    standActive,
   ]);
   const begin = async () => {
     const game = engine.current;
     if (
+      standRef.current ||
       !game ||
       game.state.phase !== 'ready' ||
       startingRef.current ||
@@ -530,6 +588,7 @@ export default function App() {
     }
     if (engine.current !== game) return;
     if (
+      standRef.current ||
       document.hidden ||
       dialogRef.current !== null ||
       modeRef.current !== mode ||
@@ -545,7 +604,7 @@ export default function App() {
     if (engine.current) setState(engine.current.snapshot());
   };
   remoteAction.current = (message) => {
-    if (modeRef.current !== 'phone' || !host.connected) return;
+    if (standRef.current || modeRef.current !== 'phone' || !host.connected) return;
     if (message.action === 'pause') pause();
     if (message.action === 'start') void begin();
     if (message.action === 'resume' && !dialog && !sceneError) resume();
@@ -618,7 +677,7 @@ export default function App() {
     navigate('recipes');
   };
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (mode !== 'mouse' || !container.current) return;
+    if (standRef.current || mode !== 'mouse' || !container.current) return;
     const bounds = container.current.getBoundingClientRect();
     const next = {
       x: (event.clientX - bounds.left) / bounds.width,
@@ -651,6 +710,7 @@ export default function App() {
       className={`app view-${view} ${lowQuality ? 'quality-low' : ''}`}
       onClickCapture={(event) => {
         if (
+          !standRef.current &&
           (view !== 'game' || dialogRef.current) &&
           event.target instanceof Element &&
           event.target.closest('button')
@@ -681,6 +741,11 @@ export default function App() {
           </span>
         </div>
         <div className="header-actions">
+          {view === 'home' && (
+            <button className="stand-mode-trigger" onClick={openStand}>
+              <Film size={17} /> Mode stand
+            </button>
+          )}
           <button
             className={`connect-button ${host.connected ? 'is-connected' : ''}`}
             onClick={() => {
@@ -722,7 +787,7 @@ export default function App() {
           onNickname={setNickname}
           sceneRef={container}
           sceneError={sceneError}
-          keyboardEnabled={!dialog}
+          keyboardEnabled={!dialog && !standActive}
         />
       )}
 
@@ -1424,6 +1489,7 @@ export default function App() {
           )}
         </Modal>
       )}
+      {standActive && <StandMode onClose={closeStand} />}
     </div>
   );
 }
