@@ -4,7 +4,7 @@ Un jeu de cuisine en 3D dans le navigateur : le téléphone devient une manette 
 
 ## Version salon
 
-- Accueil interactif et sélection de recette avec aperçu 3D.
+- Accueil interactif et sélection de recette avec aperçu 3D. Une partie complète dure environ **54 à 60 secondes**, hors connexion, tutoriel et pauses.
 - **Mode stand** depuis l’accueil : film en boucle, silencieux par défaut, son facultatif et retour au jeu sans recréer le salon.
 - Calibration guidée, viseur visible et essai facultatif avant le chronomètre : couper deux ingrédients de la recette, puis laisser passer un piège.
 - Après le choix de la recette et du pseudo sur le PC, lancement, pause et reprise depuis le téléphone.
@@ -15,7 +15,7 @@ Un jeu de cuisine en 3D dans le navigateur : le téléphone devient une manette 
 - Ingrédients et objets spéciaux reconnaissables par leurs modèles 3D ; étoile bouclier, cœur de soin, sablier, bombe, frénésies et défis de découpe rythment la partie.
 - Pseudo public de 2 à 20 caractères et scores persistants sur le PC. Quatre tableaux « all time » au menu : général, burger, tacos et gâteau, toutes commandes réunies. Seules les recettes réussies sont classées.
 - Bouton **Joueur suivant** : nouveau pseudo et nouveau salon, ancien téléphone détaché.
-- Invitation facultative après la partie : **Entrez dans les coulisses du jeu** ouvre **[/atelier#atelier-decouverte](http://localhost:5173/atelier#atelier-decouverte)** dans un nouvel onglet, en conservant le résultat. Six étapes animées expliquent le geste, le relais/QR, les aliments 3D, la coupe et les règles, le mélange, puis le résultat et le classement. Navigation précédent/suivant et clavier, explications courtes et volet de code facultatif ; les démonstrations sont illustratives, sans mesures du joueur.
+- Invitation facultative après la partie : **Entrez dans les coulisses du jeu** ouvre **[/atelier#atelier-decouverte](http://localhost:5173/atelier#atelier-decouverte)** dans un nouvel onglet, en conservant le résultat. Six étapes animées expliquent le geste, le relais/QR, les aliments 3D, la coupe et les règles, le mélange, puis le résultat et le classement. Navigation précédent/suivant et clavier. Le code se découvre en trois étapes avec coloration syntaxique, lignes mises en évidence, explications et animation synchronisée ; les références de source restent repliables. Les démonstrations sont illustratives, sans mesures du joueur.
 
 Lire [le guide du salon et les choix réseau](docs/salon.md) et [la carte du code](docs/architecture.md).
 
@@ -137,28 +137,28 @@ Le pavé conserve le doigt actif lorsqu’il change de dimensions ou lors du pas
 
 | Recette         | Bons ingrédients                         | Quantité par ingrédient | Pièges                    |
 | --------------- | ---------------------------------------- | ----------------------- | ------------------------- |
-| Le Ninja Burger | Pain, steak, fromage, salade, tomate     | 5                       | Poisson, piment, fraise   |
-| Tacos Loco      | Tortilla, poulet, avocat, tomate, oignon | 6                       | Chocolat, poisson, fraise |
-| Choco Sensei    | Farine, œuf, chocolat, fraise            | 8                       | Piment, brocoli, poisson  |
+| Le Ninja Burger | Pain, steak, fromage, salade, tomate     | 3                       | Poisson, piment, fraise   |
+| Tacos Loco      | Tortilla, poulet, avocat, tomate, oignon | 4                       | Chocolat, poisson, fraise |
+| Choco Sensei    | Farine, œuf, chocolat, fraise            | 5                       | Piment, brocoli, poisson  |
 
-Chaque partie commence avec trois vies et comporte 3 secondes de décompte, **80 secondes de découpe**, puis **8 secondes de mélange** si la liste est complète. La phase de découpe se poursuit jusqu’au bout même si la liste est déjà complète : les coupes supplémentaires rapportent des points. Sans bouclier, un mauvais aliment coûte un cœur et une bombe jusqu’à deux ; atteindre zéro vie termine la partie. Les soins peuvent rendre des vies en cours de jeu, toujours dans la limite de trois. Rater un ingrédient ne retire pas de cœur, mais la liste doit être remplie avant la fin. Atteindre au moins **35 %** de la jauge de mélange permet de servir le plat.
+Chaque partie commence avec trois vies et comporte **3 secondes de décompte**, **45 secondes de découpe**, puis **6 secondes de mélange** si la liste est complète. Cela représente 54 secondes, jusqu’à 60 secondes avec les deux défis rares, hors connexion, tutoriel et pauses. Les recettes demandent respectivement 15, 20 et 20 bons ingrédients au minimum. La phase de découpe se poursuit jusqu’au bout même si la liste est déjà complète : les coupes supplémentaires rapportent des points. Sans bouclier, un mauvais aliment coûte un cœur et une bombe jusqu’à deux ; atteindre zéro vie termine la partie. Les soins peuvent rendre des vies en cours de jeu, toujours dans la limite de trois. Rater un ingrédient ne retire pas de cœur, mais la liste doit être remplie avant la fin. Atteindre au moins **35 %** de la jauge de mélange permet de servir le plat.
 
 | Événement ou objet                                  | Effet                                                                      |
 | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| Frénésie de 20 à 30 s, puis de 50 à 60 s de découpe | Vols ×1,65 et cadence d’apparition ×1,5 ; points habituels                 |
+| Frénésie de 12 à 18 s, puis de 33 à 39 s de découpe | Vols ×1,65 et cadence d’apparition ×1,5 ; points habituels                 |
 | Étoile bouclier                                     | Protection contre les pièges et bombes pendant 10 s ; aucun point immédiat |
 | Cœur bonbon                                         | +1 vie si une vie manque ; plafond de 3 vies                               |
-| Ingrédient brillant à 12 et 42 s                    | Zoom et défi de 3 s : +50 points par coupe acceptée                        |
+| Ingrédient brillant à 10 et 28 s                    | Zoom et défi de 3 s : +50 points par coupe acceptée                        |
 | Sablier cyan                                        | +100 points ; vols et cadence des ingrédients à 55 % pendant 5 s de jeu    |
 | Bombe rouge et noire                                | −2 cœurs et combo interrompu                                               |
 
-Un objet spécial s’ajoute toutes les 8 secondes, dans le cycle étoile → bombe → sablier, jusqu’à neuf objets sur une découpe complète. Ces objets ne remplissent pas la liste de recette. Le bouclier préserve les cœurs et le combo, y compris contre une bombe. Le ralenti prend la priorité sur la vitesse de frénésie sans prolonger le chronomètre.
+Un objet spécial s’ajoute toutes les 8 secondes, dans le cycle étoile → bombe → sablier, soit cinq objets à 8, 16, 24, 32 et 40 secondes sur une découpe complète. Ces objets ne remplissent pas la liste de recette. Le bouclier préserve les cœurs et le combo, y compris contre une bombe. Le ralenti prend la priorité sur la vitesse de frénésie sans prolonger le chronomètre.
 
-Trois occasions de récupérer une vie sont prévues à **18, 40 et 62 secondes** de découpe. Un cœur bonbon supplémentaire apparaît seulement si une vie manque à cet instant. Il se récupère en le coupant, sans points ni changement de combo, avec un maximum de trois vies simultanées. Une occasion passée à vie pleine est consommée ; il n’y a jamais plus de trois cœurs à collecter par partie.
+Trois occasions de récupérer une vie sont prévues à **18, 30 et 42 secondes** de découpe. Un cœur bonbon supplémentaire apparaît seulement si une vie manque à cet instant. Il se récupère en le coupant, sans points ni changement de combo, avec un maximum de trois vies simultanées. Une occasion passée à vie pleine est consommée ; il n’y a jamais plus de trois cœurs à collecter par partie.
 
 Un ingrédient brillant supplémentaire privilégie les ingrédients manquants. Une grande aura dorée, des rayons et des étincelles signalent sa rareté sans masquer l’aliment. Sa première coupe remplit la recette normalement, puis le jeu le rapproche pendant **3 secondes** : chaque nouvelle coupe acceptée rapporte **50 points**, versés à la fin du défi. Un délai minimal de 110 ms sépare deux coupes et le bonus est plafonné à 1 500 points par défi. Pendant ce temps, les autres aliments, le chronomètre de recette et les pouvoirs sont figés ; les deux défis peuvent donc ajouter jusqu’à 6 secondes à la partie. Une pause fige aussi le défi. Aucun contour rigide ni texte n’est attaché aux aliments.
 
-Le son suit les actions : souffle de lame, textures de coupe selon l’aliment, impact des pièges, explosion, bouclier, soin et accords des événements. Une ambiance de cuisine discrète accompagne la découpe ; le bruit du fouet suit l’intensité du mélange. Les sons sont générés localement, sans téléchargement, et s’arrêtent en pause, en sourdine ou lorsque l’onglet est masqué. Le bouton haut-parleur coupe toute l’ambiance et les bruitages.
+Le son suit les gestes, les coupes et les événements du jeu, sans boucle d’ambiance ni musique de fond. Dix bruitages **Kenney sous CC0**, servis avec le jeu depuis `public/audio/kitchen/`, associent coupes, bois, frottements, plats et verre selon l’action. Le mélange déclenche de courts frottements et contacts de récipient seulement pendant le geste. Un fichier absent ou indécodable utilise un bref son de secours synthétique ; aucun ancien bruitage ne rejoue après chargement. La pause, la sourdine et un onglet masqué arrêtent les sources. Les origines, licences et transformations sont détaillées dans [la provenance des sons](public/audio/kitchen/PROVENANCE.md). La bande-son du film de présentation reste distincte.
 
 Les sons sortent du **PC**. En cas de silence, ouvrir **Réglages → Tester le son sur le PC** : le test active le contexte et joue deux notes. L’interface affiche l’état d’activation du navigateur. Si les notes sont envoyées mais restent inaudibles, vérifier le volume, la sortie audio et la sourdine de l’onglet ou du navigateur intégré. Le lancement depuis le téléphone ne remplace pas l’autorisation audio sur le PC.
 
@@ -179,10 +179,13 @@ src/game/recipes.ts     Recettes et ingrédients
 src/game/Scene.ts       Rendu 3D, trajectoires, collisions et particules
 src/game/SceneOverlay.ts  Anneaux de coupe et flèches de mélange
 src/game/food.ts        Modèles 3D procéduraux mutualisés
-src/game/audio.ts       Bruitages et ambiance Web Audio synchronisés
+src/game/audio.ts       Bruitages courts Web Audio synchronisés
+src/game/kitchen-samples.ts  Chargement des WAV locaux et secours percussif
+public/audio/kitchen/   Bruitages Kenney CC0, licences et provenance
 src/components/        Composants d’interface
 src/net.ts              Client WebSocket PC
 shared/protocol.ts      Types et validation des messages
+shared/round.ts         Durées communes du décompte, de la découpe et du mélange
 shared/blades.ts        Trois lames, couleurs et validation partagées
 server/relay.ts         Salons et relais PC–téléphone
 server/index.ts         HTTP(S), Vite et service de production
@@ -216,7 +219,7 @@ Les variables disponibles sont décrites dans `.env.example`. Elles doivent êtr
 
 ## Portée de la version actuelle
 
-La version actuelle comprend trois recettes, modèles 3D procéduraux, collisions, éclats et traînées, sons désactivables, score/combos, pause, résultats, QR code, salons, validation réseau, capteurs, recentrage et contrôles de secours. Le parcours salon comprend les commandes de partie depuis le téléphone, le changement explicite de mode, les trois lames, l’essai guidé et la découverte pédagogique après la partie. Les règles `stand-v0.5-hearts` réunissent les frénésies, boucliers, ralentis, bombes, défis de découpe et cœurs de soin. Le contrôleur mobile ne charge pas le moteur Three.js. Les polices sont locales, sans CDN.
+La version actuelle comprend trois recettes, modèles 3D procéduraux, collisions, éclats et traînées, sons désactivables, score/combos, pause, résultats, QR code, salons, validation réseau, capteurs, recentrage et contrôles de secours. Le parcours salon comprend les commandes de partie depuis le téléphone, le changement explicite de mode, les trois lames, l’essai guidé et la découverte pédagogique après la partie. Les règles `stand-v0.6-minute` adaptent les quotas et événements à la partie d’environ une minute. Les anciens records restent conservés avec leurs durées et règles d’origine ; le classement historique ne garantit pas une comparaison équitable entre versions. Le contrôleur mobile ne charge pas le moteur Three.js. Les polices sont locales, sans CDN.
 
 Le gyroscope pilote une **visée relative**, pas une position physique 3D. Les aliments éclatent en particules ; il n’y a pas encore de découpe exacte du maillage en deux. Les ingrédients sont reconnaissables mais stylisés. Le mélange est une jauge de mouvement, sans simulation de pâte.
 
@@ -230,7 +233,7 @@ Voir [la recherche technique et la suite proposée](docs/recherche-technique.md)
 
 Ouvrir le jeu sur **localhost** côté PC, même quand le téléphone utilise le domaine HTTPS. L’adresse publique du tunnel et l’IP LAN ne permettent pas d’enregistrer un résultat : le jeu le signale et reste jouable en partie libre. Les pseudonymes sont affichés comme texte, jamais comme HTML. Aucun email n’est stocké.
 
-Les nouvelles parties utilisent les règles **`stand-v0.5-hearts`**. Les tableaux « all time » incluent aussi les victoires **`stand-v0.2`**, **`stand-v0.3-events`** et **`stand-v0.4-frenzy`**, sans effacement ni recalcul. Chaque partie conserve sa version et sa validation historique. Les règles de points et de survie ayant évolué, ces scores ne sont pas strictement comparables.
+Les nouvelles parties utilisent les règles **`stand-v0.6-minute`**. Les tableaux « all time » incluent aussi les victoires **`stand-v0.2`**, **`stand-v0.3-events`**, **`stand-v0.4-frenzy`** et **`stand-v0.5-hearts`**, sans effacement ni recalcul. Chaque partie conserve sa version et sa validation historique. Les durées, quotas, points et règles de survie ayant évolué, ces scores ne sont pas strictement comparables.
 
 L’interface lit `GET /api/leaderboard?scope=all-time`, avec `recipeId` pour une recette et `highlightEntryId` pour retrouver le rang exact d’une partie. Sans `scope`, l’API conserve son filtre historique `current-rules` ; le filtre facultatif `mode` reste disponible aux anciens clients. Le contrat détaillé figure dans [l’architecture](docs/architecture.md#classement-du-stand).
 

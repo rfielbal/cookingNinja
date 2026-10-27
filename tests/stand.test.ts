@@ -18,7 +18,7 @@ import {
   type StandRun,
 } from '../server/stand-domain.js';
 import { FOCUS_MAX_BONUS, HEART_SPAWN_TIMES, maximumSpawns } from '../src/game/events.js';
-import { GameEngine } from '../src/game/engine.js';
+import { COUNTDOWN_SECONDS, CUT_SECONDS, MIX_SECONDS, GameEngine } from '../src/game/engine.js';
 import { RECIPES } from '../src/game/recipes.js';
 import { getLeaderboard } from '../src/stand.js';
 
@@ -242,7 +242,7 @@ test('règles événements : score sans multiplicateur, deux focus et bombes res
   );
   assert.doesNotThrow(() => validateResult(rulesRun, { ...lost, mistakes: 2 }, finishedAt));
   assert.throws(() => validateResult(rulesRun, { ...lost, mistakes: 1 }, finishedAt));
-  const max = maximumSpawns(80, RECIPES[0].spawnInterval);
+  const max = maximumSpawns(CUT_SECONDS, RECIPES[0].spawnInterval);
   assert.throws(() =>
     validateResult(
       rulesRun,
@@ -289,7 +289,7 @@ test('règles historiques : les anciennes parties gardent leurs limites de score
   assert.throws(() =>
     validateResult(previousEvents, { ...doubled, score: doubled.score + 1 }, finishedAt),
   );
-  const oldMax = maximumSpawns(80, RECIPES[0].spawnInterval, false);
+  const oldMax = Math.ceil(90 / 1.1) + 1 + 9;
   assert.throws(() =>
     validateResult(
       previousEvents,
@@ -317,7 +317,7 @@ test('règles historiques : les anciennes parties gardent leurs limites de score
 });
 
 test('règles cœurs : six erreurs au maximum après soins, cinq si la partie reste vivante', () => {
-  assert.equal(RULES_VERSION, 'stand-v0.5-hearts');
+  assert.equal(RULES_VERSION, 'stand-v0.6-minute');
   for (const mistakes of [2, 3, 4, 5, 6]) {
     const result = parseRunResult({ ...lost, mistakes });
     assert.doesNotThrow(() => validateResult(rulesRun, result, finishedAt));
@@ -405,16 +405,19 @@ test('règles événements : les victoires réellement calculées par les trois 
       () => 0.5,
     );
     game.start();
-    for (let step = 0; step < 2050 && game.state.phase !== 'result'; step += 1) {
+    let elapsed = 0;
+    for (let step = 0; step < 1210 && game.state.phase !== 'result'; step += 1) {
       game.tick(0.05, 1);
+      elapsed += 0.05;
       if (game.state.focus) game.hit(game.state.focus.id);
     }
     assert.equal(game.state.outcome, 'won');
+    assert.ok(elapsed >= 60 && elapsed <= 60.2, `${recipe.id}: ${elapsed} s`);
     assert.doesNotThrow(() =>
       validateResult(
         { ...rulesRun, recipeId: recipe.id },
         parseRunResult(game.snapshot()),
-        finishedAt,
+        Date.parse(rulesRun.createdAt) + Math.round(elapsed * 1_000),
       ),
     );
   }
@@ -445,6 +448,11 @@ test('règles classement : les anciens records restent stockés sans rejoindre l
     id: '00000000-0000-4000-8000-000000000003',
     rulesVersion: 'stand-v0.4-frenzy',
   });
+  data.runs.push({
+    ...data.runs[0],
+    id: '00000000-0000-4000-8000-000000000004',
+    rulesVersion: 'stand-v0.5-hearts',
+  });
   await writeFile(path, JSON.stringify(data), { mode: 0o600 });
   store = await StandStore.open(directory, () => now);
   assert.equal((await store.leaderboard()).length, 0);
@@ -454,14 +462,20 @@ test('règles classement : les anciens records restent stockés sans rejoindre l
   const ranking = await store.leaderboard();
   assert.equal(ranking.length, 1);
   assert.equal(ranking[0].rulesVersion, RULES_VERSION);
-  assert.equal(JSON.parse(await readFile(path, 'utf8')).runs.length, 4);
+  assert.equal(JSON.parse(await readFile(path, 'utf8')).runs.length, 5);
   const unchanged = await readFile(path, 'utf8');
   const allTime = await store.leaderboardPage({ scope: 'all-time' });
-  assert.equal(allTime.total, 4);
-  assert.equal(allTime.entries.length, 4);
+  assert.equal(allTime.total, 5);
+  assert.equal(allTime.entries.length, 5);
   assert.deepEqual(
     new Set(allTime.entries.map((entry) => entry.rulesVersion)),
-    new Set(['stand-v0.2', 'stand-v0.3-events', 'stand-v0.4-frenzy', RULES_VERSION]),
+    new Set([
+      'stand-v0.2',
+      'stand-v0.3-events',
+      'stand-v0.4-frenzy',
+      'stand-v0.5-hearts',
+      RULES_VERSION,
+    ]),
   );
   assert.equal(await readFile(path, 'utf8'), unchanged);
 });
@@ -653,4 +667,59 @@ test('classement HTTP agrégé : métadonnées, modes réunis et identification 
   assert.equal((await request('GET', '/leaderboard')).body.scope, 'current-rules');
   assert.equal((await request('GET', '/leaderboard?scope=nope')).status, 400);
   assert.equal((await request('GET', '/leaderboard?highlightEntryId=nope')).status, 400);
+});
+
+test('les règles minute appliquent leurs propres durées et quotas sans réinterpréter les anciennes parties', () => {
+  const createdAt = Date.parse(rulesRun.createdAt);
+  const oldVersions = ['stand-v0.2', 'stand-v0.3-events', 'stand-v0.4-frenzy', 'stand-v0.5-hearts'];
+  for (const recipe of RECIPES) {
+    const hits = recipe.goal * recipe.ingredients.length;
+    const result = { ...won, hits, bestCombo: hits, score: hits * 100 + 175 };
+    const current = { ...rulesRun, recipeId: recipe.id };
+    const currentMinimum = (CUT_SECONDS + MIX_SECONDS + 1) * 1_000;
+    assert.throws(() => validateResult(current, result, createdAt + currentMinimum - 1));
+    assert.doesNotThrow(() => validateResult(current, result, createdAt + currentMinimum));
+    assert.throws(() =>
+      validateResult(current, { ...result, hits: hits - 1, bestCombo: hits - 1 }, finishedAt),
+    );
+    for (const rulesVersion of oldVersions) {
+      const old = { ...current, rulesVersion };
+      assert.throws(() => validateResult(old, result, finishedAt), `${rulesVersion}: ancien quota`);
+      const oldHits = { burger: 25, tacos: 30, cake: 32 }[recipe.id];
+      const oldResult = { ...won, hits: oldHits, bestCombo: oldHits, score: oldHits * 100 + 175 };
+      assert.throws(
+        () => validateResult(old, oldResult, createdAt + 88_999),
+        `${rulesVersion}: ancienne durée`,
+      );
+      assert.doesNotThrow(() => validateResult(old, oldResult, createdAt + 89_000));
+    }
+  }
+});
+
+test('les records cœurs historiques conservent le calendrier des soins et le nombre maximal d’objets', () => {
+  const historical = { ...rulesRun, rulesVersion: 'stand-v0.5-hearts' };
+  const createdAt = Date.parse(rulesRun.createdAt);
+  const sixthMistake = { ...lost, mistakes: 6 };
+  const newThirdHeart = (COUNTDOWN_SECONDS + HEART_SPAWN_TIMES[2]) * 1_000;
+  assert.doesNotThrow(() => validateResult(rulesRun, sixthMistake, createdAt + newThirdHeart));
+  assert.throws(() => validateResult(historical, sixthMistake, createdAt + newThirdHeart));
+  assert.throws(() => validateResult(historical, sixthMistake, createdAt + 64_999));
+  assert.doesNotThrow(() => validateResult(historical, sixthMistake, createdAt + 65_000));
+  const oldMax = Math.ceil(90 / 1.1) + 1 + 9 + 2;
+  const result = {
+    score: oldMax * 100,
+    hits: oldMax,
+    bestCombo: oldMax,
+    mistakes: 0,
+    outcome: 'ingredients',
+  } as const;
+  assert.doesNotThrow(() => validateResult(historical, result, finishedAt));
+  assert.throws(() => validateResult(rulesRun, result, finishedAt));
+  assert.throws(() =>
+    validateResult(
+      historical,
+      { ...result, hits: oldMax + 1, bestCombo: oldMax + 1, score: (oldMax + 1) * 100 },
+      finishedAt,
+    ),
+  );
 });

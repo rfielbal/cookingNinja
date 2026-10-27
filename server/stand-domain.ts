@@ -1,4 +1,4 @@
-import { CUT_SECONDS, MIX_SECONDS } from '../src/game/engine.js';
+import { COUNTDOWN_SECONDS, CUT_SECONDS, MIX_SECONDS } from '../shared/round.js';
 import {
   FOCUS_MAX_BONUS,
   HEART_SPAWN_TIMES,
@@ -8,7 +8,15 @@ import {
 } from '../src/game/events.js';
 import { RECIPES, type RecipeId } from '../src/game/recipes.js';
 
-export const RULES_VERSION = 'stand-v0.5-hearts';
+export const RULES_VERSION = 'stand-v0.6-minute';
+
+// Historical records are checked against their original rules, never today's recipe quotas.
+const HISTORIC_RECIPES = {
+  burger: { requiredHits: 25, spawnInterval: 1.1 },
+  tacos: { requiredHits: 30, spawnInterval: 0.95 },
+  cake: { requiredHits: 32, spawnInterval: 0.82 },
+} as const;
+const HISTORIC_HEART_TIMES = [18, 40, 62] as const;
 export type ControlMode = 'motion' | 'touch' | 'mouse';
 export type Outcome = 'won' | 'hearts' | 'ingredients' | 'mix';
 export interface RunStart {
@@ -153,20 +161,32 @@ export function validateResult(run: StandRun, result: RunResult, now: number): v
   const legacy = run.rulesVersion === 'stand-v0.2';
   const previousEvents = run.rulesVersion === 'stand-v0.3-events';
   const previousFrenzy = run.rulesVersion === 'stand-v0.4-frenzy';
-  const healing = run.rulesVersion === RULES_VERSION;
+  const minute = run.rulesVersion === RULES_VERSION;
+  const healing = minute || run.rulesVersion === 'stand-v0.5-hearts';
   if (!legacy && !previousEvents && !previousFrenzy && !healing)
     throw new StandError(422, 'Cette version des règles n’est plus prise en charge.');
-  const maxSpawns = legacy
-    ? Math.ceil(CUT_SECONDS / recipe.spawnInterval) + 1
-    : maximumSpawns(CUT_SECONDS, recipe.spawnInterval, !previousEvents);
+  const historical = HISTORIC_RECIPES[run.recipeId];
+  const cutSeconds = minute ? CUT_SECONDS : 80;
+  const mixSeconds = minute ? MIX_SECONDS : 8;
+  const countdownSeconds = minute ? COUNTDOWN_SECONDS : 3;
+  const requiredHits = minute ? recipe.ingredients.length * recipe.goal : historical.requiredHits;
+  const heartTimes = minute ? HEART_SPAWN_TIMES : HISTORIC_HEART_TIMES;
+  const maxSpawns = minute
+    ? maximumSpawns(CUT_SECONDS, recipe.spawnInterval)
+    : legacy
+      ? Math.ceil(80 / historical.spawnInterval) + 1
+      : // Old event rounds: 80 s + two 10 s rushes at ×1.5, nine specials, then two rares.
+        Math.ceil(90 / historical.spawnInterval) + 1 + 9 + (previousEvents ? 0 : 2);
+  const focusBonus = minute ? FOCUS_MAX_BONUS : 1_500;
+  const focusCount = minute ? SHINY_SPAWN_TIMES.length : 2;
   const hitScoreCeiling = previousEvents
     ? result.hits * 400
     : !legacy
-      ? result.hits * 200 + Math.min(SHINY_SPAWN_TIMES.length, result.hits) * FOCUS_MAX_BONUS
+      ? result.hits * 200 + Math.min(focusCount, result.hits) * focusBonus
       : result.hits <= 11
         ? 100 * result.hits + 5 * result.hits * (result.hits - 1)
         : 1_650 + (result.hits - 11) * 200;
-  const maximumMistakes = healing ? MAX_HEARTS + HEART_SPAWN_TIMES.length : MAX_HEARTS;
+  const maximumMistakes = healing ? MAX_HEARTS + heartTimes.length : MAX_HEARTS;
   const validMistakes =
     result.outcome === 'hearts'
       ? legacy
@@ -180,8 +200,7 @@ export function validateResult(run: StandRun, result: RunResult, now: number): v
     result.score < result.hits * 100 ||
     result.score > hitScoreCeiling + (result.outcome === 'won' ? 500 : 0) ||
     !validMistakes ||
-    (['won', 'mix'].includes(result.outcome) &&
-      result.hits < recipe.ingredients.length * recipe.goal) ||
+    (['won', 'mix'].includes(result.outcome) && result.hits < requiredHits) ||
     (result.outcome === 'won' && result.score < result.hits * 100 + 175)
   ) {
     throw new StandError(422, 'Ce résultat ne correspond pas aux règles de la recette.');
@@ -191,11 +210,15 @@ export function validateResult(run: StandRun, result: RunResult, now: number): v
   const requiredHeals = healing
     ? Math.max(0, result.mistakes - (result.outcome === 'hearts' ? MAX_HEARTS : MAX_HEARTS - 1))
     : 0;
-  const earliestHealing = requiredHeals ? (3 + HEART_SPAWN_TIMES[requiredHeals - 1]) * 1_000 : 0;
+  const earliestHealing = requiredHeals
+    ? (countdownSeconds + heartTimes[requiredHeals - 1]) * 1_000
+    : 0;
   const minimum =
     result.outcome === 'hearts'
-      ? Math.max(3_000, earliestHealing)
-      : (CUT_SECONDS + (result.outcome === 'ingredients' ? 0 : MIX_SECONDS) + 1) * 1_000;
+      ? Math.max(countdownSeconds * 1_000, earliestHealing)
+      : // Preserve the existing two-second allowance between the client and server clocks.
+        (cutSeconds + (result.outcome === 'ingredients' ? 0 : mixSeconds) + countdownSeconds - 2) *
+        1_000;
   if (elapsed < minimum || elapsed > 24 * 60 * 60 * 1_000) {
     throw new StandError(422, 'La durée de cette partie est invalide ou la partie a expiré.');
   }

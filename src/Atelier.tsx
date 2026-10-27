@@ -25,11 +25,10 @@ import {
 } from 'lucide-react';
 import { ATELIER_SLIDES, type AtelierStep } from './atelierSlides';
 import { AtelierStage } from './components/AtelierStage';
-import { Modal } from './components/Modal';
+import { AtelierCodeLab } from './components/AtelierCodeLab';
 import './atelier.css';
 
 const icons = [Smartphone, Radio, Salad, Scissors, Soup, Trophy];
-const repository = 'https://github.com/rfielbal/cookingNinja';
 type Variant = 'normal' | 'frenzy' | 'trap' | 'shield';
 function initialSlide() {
   return Math.max(
@@ -245,6 +244,11 @@ export default function Atelier() {
     () => matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const [codeOpen, setCodeOpen] = useState(false);
+  const codeButton = useRef<HTMLButtonElement>(null);
+  const closeCode = () => {
+    setCodeOpen(false);
+    requestAnimationFrame(() => codeButton.current?.focus({ preventScroll: true }));
+  };
   const [action, setAction] = useState(0);
   const [variant, setVariant] = useState<Variant>('normal');
   const [hit, setHit] = useState(false);
@@ -389,7 +393,11 @@ export default function Atelier() {
               <StepIcon size={23} />
               <p>{current.takeaway}</p>
             </div>
-            <button className="atelier-code-button" onClick={() => setCodeOpen(true)}>
+            <button
+              ref={codeButton}
+              className="atelier-code-button"
+              onClick={() => setCodeOpen(true)}
+            >
               <Code2 size={19} /> Voir le code de cette étape <ArrowUpRight size={17} />
             </button>
             <span className="atelier-story-note">Les coulisses du jeu, à votre rythme.</span>
@@ -522,46 +530,13 @@ export default function Atelier() {
         </div>
       </footer>
       {codeOpen && (
-        <Modal
-          title={current.codeTitle}
-          onClose={() => setCodeOpen(false)}
-          className="atelier-code-dialog"
-        >
-          <p className="atelier-code-eyebrow">
-            <Code2 size={18} /> DERRIÈRE CETTE ANIMATION
-          </p>
-          <h2>{current.codeTitle}</h2>
-          <p>{current.explanation}</p>
-          <span className="atelier-code-kind">
-            {current.codeKind === 'extrait'
-              ? 'Extrait du projet'
-              : 'Logique simplifiée pour la lecture'}
-          </span>
-          <pre>
-            <code>{current.code}</code>
-          </pre>
-          <div className="atelier-code-files">
-            {current.files.map((file) => (
-              <a
-                key={file}
-                href={`${repository}/blob/main/${file}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {file}
-                <ArrowUpRight size={17} />
-              </a>
-            ))}
-          </div>
-          <a
-            className="atelier-repository"
-            href={repository}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Explorer le dépôt complet <ArrowUpRight size={16} />
-          </a>
-        </Modal>
+        <AtelierCodeLab
+          key={current.id}
+          slide={current}
+          reducedMotion={reducedMotion}
+          hidden={hidden}
+          onClose={closeCode}
+        />
       )}
     </div>
   );

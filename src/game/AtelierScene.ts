@@ -12,6 +12,8 @@ export interface AtelierSceneState {
   reducedMotion: boolean;
   action: number;
   variant: AtelierVariant;
+  /** Optional code illustration: 0, 1 or 2; omitted for the ordinary slideshow. */
+  codeStep?: number;
 }
 type Fragment = { mesh: THREE.Mesh; velocity: THREE.Vector3; turn: number };
 const TAU = Math.PI * 2;
@@ -41,6 +43,8 @@ export class AtelierScene {
   private readonly bladeVertices = new Float32Array(18);
   private readonly blade: THREE.Mesh;
   private readonly pointer = new THREE.Group();
+  private readonly codeTarget = new THREE.Group();
+  private codeDish?: THREE.Group;
   private readonly shieldMaterial = new THREE.MeshBasicMaterial({
     color: '#9beeff',
     transparent: true,
@@ -75,6 +79,7 @@ export class AtelierScene {
     initial: AtelierSceneState,
   ) {
     this.config = initial;
+    if (initial.codeStep !== undefined) this.age = 0;
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setClearColor(0, 0);
@@ -103,6 +108,10 @@ export class AtelierScene {
     const dot = this.factory.sphere('#fff8df', [0.045, 0.045, 0.045]);
     this.pointer.add(cursor, dot);
     this.pointer.position.z = 3;
+    this.codeTarget.add(this.factory.ring('#8ecbb9', 0.19, 0.022));
+    this.codeTarget.position.z = 3;
+    this.codeTarget.visible = false;
+    this.scene.add(this.codeTarget);
     for (let i = 0; i < 18; i++) {
       const mesh = new THREE.Mesh(
         this.factory.geometry('atelier-fragment', () => new THREE.IcosahedronGeometry(1, 0)),
@@ -120,14 +129,20 @@ export class AtelierScene {
   }
 
   get animating(): boolean {
-    return !this.config.paused && (!this.config.reducedMotion || this.explicitRemaining > 0);
+    return (
+      !this.config.paused &&
+      (!this.config.reducedMotion ||
+        (this.config.codeStep === undefined && this.explicitRemaining > 0))
+    );
   }
 
   configure(next: AtelierSceneState): void {
     const previous = this.config;
     this.config = next;
-    if (next.step !== previous.step) {
-      this.age = 0.75;
+    if (next.step !== previous.step || next.codeStep !== previous.codeStep) {
+      if (previous.codeStep !== undefined || next.codeStep !== undefined)
+        this.restoreIllustrationPoses();
+      this.age = next.codeStep === undefined ? 0.75 : 0;
       this.actionAge = Infinity;
       this.explicitRemaining = 0;
       this.fragmentAge = 1;
@@ -139,6 +154,7 @@ export class AtelierScene {
       this.actionAge = Infinity;
       this.fragmentAge = 1;
       this.burstCycle = -1;
+      if (next.codeStep !== undefined) this.age = 0;
     }
     if (next.action !== previous.action && next.step === previous.step) this.action();
   }
@@ -169,11 +185,23 @@ export class AtelierScene {
     this.actionAge += dt;
     this.age +=
       dt *
-      (this.config.step === 'flight' && this.config.variant === 'frenzy' ? RUSH_WORLD_SPEED : 1);
+      (this.config.codeStep === undefined &&
+      this.config.step === 'flight' &&
+      this.config.variant === 'frenzy'
+        ? RUSH_WORLD_SPEED
+        : 1);
     this.pointer.visible = this.config.step === 'gesture';
     this.blade.visible = false;
     this.report.hit = false;
+    this.codeTarget.visible = false;
+    if (this.codeDish) this.codeDish.visible = false;
     const group = this.groups.get(this.config.step)!;
+    if (this.config.codeStep !== undefined) {
+      for (const { mesh } of this.fragments) mesh.visible = false;
+      this.drawCodeIllustration();
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
     switch (this.config.step) {
       case 'gesture':
         this.drawGesture();
@@ -205,6 +233,14 @@ export class AtelierScene {
   }
 
   private action(): void {
+    if (this.config.codeStep !== undefined) {
+      this.age = 0;
+      this.actionAge = 0;
+      this.fragmentAge = 1;
+      this.burstCycle = -1;
+      this.explicitRemaining = 0;
+      return;
+    }
     this.actionAge = 0;
     this.explicitRemaining = this.config.step === 'mix' ? 2 : 2.8;
     this.burstCycle = -1;
@@ -266,6 +302,178 @@ export class AtelierScene {
       this.buildBowl(group);
     }
     return group;
+  }
+
+  private restoreIllustrationPoses(): void {
+    this.groups.get('result')?.scale.setScalar(0.82);
+    if (this.gestureFood) {
+      this.gestureFood.rotation.set(1.05, -0.12, -0.06);
+      this.gestureFood.visible = true;
+    }
+    for (const food of this.flightFoods) {
+      food.visible = true;
+      food.scale.setScalar(1.05);
+      food.rotation.set(1.05, -0.12, -0.06);
+    }
+    if (this.sliceTomato) {
+      this.sliceTomato.position.set(0, 0, 0);
+      this.sliceTomato.rotation.set(1.05, -0.12, -0.06);
+      this.sliceTomato.scale.setScalar(2.1);
+    }
+    if (this.sliceFish) {
+      this.sliceFish.position.set(0, 0, 0);
+      this.sliceFish.rotation.set(0.1, -0.12, -0.06);
+      this.sliceFish.scale.setScalar(1.65);
+    }
+    this.codeTarget.visible = false;
+    if (this.codeDish) this.codeDish.visible = false;
+    for (const { mesh } of this.fragments) mesh.visible = false;
+  }
+
+  private drawCodeIllustration(): void {
+    const step = Math.min(2, Math.max(0, Math.trunc(this.config.codeStep ?? 0)));
+    const group = this.groups.get(this.config.step)!;
+    group.visible = true;
+    // A fixed, explanatory pose replaces every autonomous loop under reduced motion.
+    const time = this.config.reducedMotion ? 1.1 : this.age;
+    switch (this.config.step) {
+      case 'gesture':
+        this.drawCodeGesture(step, time);
+        break;
+      case 'flight':
+        this.drawCodeFlight(step, time);
+        break;
+      case 'slice':
+        this.drawCodeSlice(step, time);
+        break;
+      case 'mix':
+        this.drawCodeMix(step, time);
+        break;
+      case 'network':
+        group.position.set(this.viewWidth * 0.29, -this.viewHeight * 0.32, 0);
+        group.rotation.y = Math.sin(time * 0.4) * 0.06;
+        this.report.phase = 'network';
+        this.report.progress = (step + 1) / 3;
+        break;
+      case 'result':
+        group.position.set(-this.viewWidth * 0.27, -0.95 + Math.sin(time * 0.8) * 0.04, 0);
+        group.scale.setScalar(0.64);
+        group.rotation.y = Math.sin(time * 0.38) * 0.09;
+        this.report.phase = 'result';
+        this.report.progress = 1;
+        break;
+    }
+  }
+
+  private drawCodeGesture(step: number, time: number): void {
+    const angle = (time / 4.5) * TAU;
+    const center = this.viewWidth * 0.2;
+    const amplitude = Math.min(2.2, this.viewWidth * 0.18);
+    const food = this.gestureFood!;
+    food.visible = true;
+    food.position.set(center, 0, 0);
+    food.scale.setScalar(1.75);
+    food.rotation.set(1.05, -0.12, -0.06);
+    const side = Math.sin(angle) * amplitude;
+    const vertical = Math.sin(angle) * 1.8;
+    if (step === 0) this.pointer.position.set(center + side, 0, 3);
+    else if (step === 1) this.pointer.position.set(center, vertical, 3);
+    else {
+      this.codeTarget.visible = true;
+      this.codeTarget.position.set(center + side, 0.7, 3);
+      this.pointer.position.set(center + Math.sin(angle - 0.5) * amplitude * 0.88, 0.7, 3);
+    }
+    this.report.progress = (time % 4.5) / 4.5;
+    this.report.phase = ['horizontal', 'vertical', 'smoothing'][step];
+  }
+
+  private drawCodeFlight(step: number, time: number): void {
+    const p = (time % 3.2) / 3.2;
+    this.flightFoods.forEach((food, index) => {
+      food.visible = index === 1;
+      if (!food.visible) return;
+      food.scale.setScalar(1.75);
+      food.rotation.set(1.05, -0.12, -0.06);
+      if (step === 0) {
+        const rise = Math.min(1, p / 0.75);
+        food.position.set(0, -1.5 + 3 * (1 - (1 - rise) ** 2), 0);
+      } else if (step === 1) food.position.set(0, 1.65 - p * p * 3.5, 0);
+      else {
+        food.position.set(0, 0, 0);
+        food.rotation.y = time * 1.15 - 0.12;
+      }
+    });
+    this.report.progress = p;
+    this.report.phase = ['gravity', 'fall', 'rotation'][step];
+  }
+
+  private drawCodeSlice(step: number, time: number): void {
+    const cycle = this.config.reducedMotion ? (step === 0 ? 0.67 : 0.76) : time % 2.6;
+    const hitAge = cycle - 0.625;
+    const impact = hitAge >= 0 && hitAge < 0.8;
+    const trap = step === 2;
+    const shield = trap && this.config.variant === 'shield';
+    const shrink = step > 0 && impact ? 1 - ease(hitAge / 0.3) * 0.9 : 1;
+    this.sliceTomato!.visible = !trap && (step === 0 || !impact || hitAge < 0.3);
+    this.sliceFish!.visible = trap && (!impact || hitAge < 0.3);
+    this.sliceTomato!.scale.setScalar(2.1 * shrink);
+    this.sliceFish!.scale.setScalar(1.65 * shrink);
+    this.shield!.visible = shield;
+    this.shield!.scale.setScalar(
+      shield && impact ? 1 + Math.sin((hitAge * Math.PI) / 0.8) * 0.06 : 1,
+    );
+    this.shieldMaterial.opacity = shield && impact ? 0.2 : 0.1;
+    if (cycle >= 0.3 && cycle < 1.08) {
+      const p = ease((cycle - 0.3) / 0.65);
+      const previous = ease((cycle - 0.46) / 0.65);
+      this.slash(-3 + previous * 6, -1.1 + previous * 2.2, -3 + p * 6, -1.1 + p * 2.2);
+    }
+    if (step > 0 && impact)
+      this.drawCodeFragments(hitAge, shield ? '#a6edff' : trap ? '#ff9c8d' : '#f1835b');
+    this.report.progress = cycle / 2.6;
+    this.report.hit = impact;
+    this.report.phase = step === 0 ? 'contact' : shield ? 'blocked' : trap ? 'trap' : 'slice';
+  }
+
+  private drawCodeFragments(age: number, color: string): void {
+    this.fragmentMaterial.color.set(color);
+    this.fragments.forEach(({ mesh, turn }, index) => {
+      const angle = (index / this.fragments.length) * TAU;
+      const speed = 1.8 + (index % 3) * 0.6;
+      mesh.visible = true;
+      mesh.position.set(
+        Math.cos(angle) * speed * age,
+        (Math.sin(angle) * speed + 0.45) * age - 1.3 * age * age,
+        1 + ((index % 3) - 1) * 0.35 * age,
+      );
+      mesh.rotation.set(index, index * 0.7, angle + turn * age);
+      mesh.scale.setScalar(0.085 * (1 - age / 0.8));
+    });
+  }
+
+  private drawCodeMix(step: number, time: number): void {
+    if (step === 2) {
+      this.groups.get('mix')!.visible = false;
+      if (!this.codeDish) {
+        this.codeDish = new THREE.Group();
+        this.codeDish.add(this.factory.platter(), this.factory.burger());
+        this.codeDish.rotation.x = 0.24;
+        this.codeDish.scale.setScalar(0.9);
+        this.scene.add(this.codeDish);
+      }
+      this.codeDish.visible = true;
+      this.codeDish.position.set(0, -1.05, 0);
+      this.codeDish.rotation.y = Math.sin(time * 0.45) * 0.07;
+    } else {
+      const angle = time * 3.4;
+      this.bowlFood!.rotation.y = angle;
+      this.whisk!.position.x = Math.sin(angle) * 0.55;
+      this.whisk!.position.z = Math.cos(angle) * 0.55;
+      this.whisk!.rotation.set(Math.sin(angle) * 0.2, -angle, -0.24 + Math.cos(angle) * 0.16);
+    }
+    this.report.progress =
+      step === 0 && !this.config.reducedMotion ? Math.min(0.6, ((time % 4.5) / 3.4) * 0.6) : 0.6;
+    this.report.phase = step === 0 ? 'stirring' : step === 1 ? 'bonus' : 'result';
   }
 
   private drawGesture(): void {

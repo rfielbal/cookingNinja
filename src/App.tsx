@@ -35,7 +35,7 @@ import {
   X,
 } from 'lucide-react';
 import { KitchenScene } from './game/Scene';
-import { CUT_SECONDS, GameEngine, type GameState } from './game/engine';
+import { CUT_SECONDS, MIX_SECONDS, GameEngine, type GameState } from './game/engine';
 import { isSpecialKind } from './game/events';
 import { FOODS, RECIPES, type Recipe } from './game/recipes';
 import { audio } from './game/audio';
@@ -1040,7 +1040,7 @@ export default function App() {
                 <span className="player-label">À vous de jouer, {nickname}</span>
                 <div className="ready-info">
                   <span>
-                    <Clock3 size={17} /> 80 s + 8 s de mélange
+                    <Clock3 size={17} /> {CUT_SECONDS} s + {MIX_SECONDS} s de mélange
                   </span>
                   <span>
                     <Heart size={17} /> 3 cœurs
@@ -1229,7 +1229,7 @@ export default function App() {
                       ? 'Vous n’avez plus de cœurs.'
                       : state.outcome === 'ingredients'
                         ? 'Il manque des ingrédients. Gardez un œil sur votre liste.'
-                        : 'Le mélange manque d’énergie. Bougez régulièrement pendant les 8 secondes.'}
+                        : `Le mélange manque d’énergie. Bougez régulièrement pendant les ${MIX_SECONDS} secondes.`}
                 </p>
                 <div className="result-stats">
                   <div>
@@ -1389,12 +1389,12 @@ export default function App() {
                 {
                   icon: Leaf,
                   title: 'Coupez les bons ingrédients.',
-                  text: 'Inclinez le téléphone pour viser, puis faites un petit mouvement rapide pour couper. Préparez toute la liste en 80 secondes. Un piège coûte un cœur : vous en avez trois.',
+                  text: `Inclinez le téléphone pour viser, puis faites un petit mouvement rapide pour couper. Préparez toute la liste en ${CUT_SECONDS} secondes. Un piège coûte un cœur : vous en avez trois.`,
                 },
                 {
                   icon: RotateCcw,
                   title: 'Mélangez. Et régalez.',
-                  text: 'Pendant 8 secondes, faites de petits cercles réguliers. Remplissez au moins 35 % de la jauge et servez votre création !',
+                  text: `Pendant ${MIX_SECONDS} secondes, faites de petits cercles réguliers. Remplissez au moins 35 % de la jauge et servez votre création !`,
                 },
               ].map(({ icon: Icon, title, text }, i) => (
                 <div className="help-step" key={title}>

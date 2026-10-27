@@ -1,5 +1,12 @@
 import type { ArenaEvent, HitResult } from './events';
 import type { FoodKind, Recipe, RecipeId } from './recipes';
+import {
+  loadKitchenSamples,
+  makeKitchenFallback,
+  type KitchenSample,
+  type KitchenSampleBank,
+  type KitchenSampleLoader,
+} from './kitchen-samples';
 
 export type AudioPhase =
   'menu' | 'ready' | 'countdown' | 'playing' | 'paused' | 'mixing' | 'result';
@@ -28,8 +35,7 @@ export interface SoundContext {
 export type AudioStatus =
   'locked' | 'running' | 'suspended' | 'interrupted' | 'muted' | 'unavailable';
 type VisibilitySource = Pick<Document, 'hidden' | 'addEventListener' | 'removeEventListener'>;
-type Voice = { source: AudioScheduledSourceNode; nodes: AudioNode[]; persistent: boolean };
-type Channel = { voice: Voice; gain: GainNode; filter: BiquadFilterNode };
+type Voice = { source: AudioScheduledSourceNode; nodes: AudioNode[] };
 type Texture = 'crisp' | 'soft' | 'wet' | 'dry' | 'powder' | 'brittle';
 const MAX_VOICES = 24;
 const RESUME_TIMEOUT_MS = 1200;
@@ -54,23 +60,23 @@ const TEXTURES: Record<FoodKind, Texture> = {
   avocado: 'soft',
 };
 
-/** Procedural kitchen foley on the audio clock. Inaudible events are never queued. */
+/** Local kitchen foley on the audio clock. Inaudible events are never queued. */
 export class KitchenAudio {
   private context?: AudioContext;
   private master?: GainNode;
   private compressor?: DynamicsCompressorNode;
-  private noiseBuffer?: AudioBuffer;
+  private samples: KitchenSampleBank = {};
+  private fallback: KitchenSampleBank = {};
+  private sampleAbort?: AbortController;
   private voices = new Set<Voice>();
-  private ambience: Channel | null = null;
-  private mixing: Channel | null = null;
+  private mixing = new Set<Voice>();
+  private mixStep = 0;
   private phase: AudioPhase = 'menu';
-  private event: ArenaEvent = 'normal';
   private recipe: RecipeId = 'burger';
   private silent = false;
   private disposed = false;
   private lastSlash = -Infinity;
   private lastMix = -Infinity;
-  private mixAmount = 0;
   private lastSounds = new Map<AudioKind, number>();
   private variation = 0;
   private listeners = new Set<() => void>();
@@ -87,6 +93,7 @@ export class KitchenAudio {
     private readonly page: VisibilitySource | undefined = typeof document === 'undefined'
       ? undefined
       : document,
+    private readonly loadSamples: KitchenSampleLoader = loadKitchenSamples,
   ) {
     page?.addEventListener('visibilitychange', this.onVisibility);
   }
@@ -98,7 +105,6 @@ export class KitchenAudio {
     if (this.silent === value) return;
     this.silent = value;
     if (value) this.stopAll();
-    else this.ensureBackground();
     this.notifyStatus();
   }
 
@@ -139,23 +145,33 @@ export class KitchenAudio {
         this.failedCreation = false;
         this.retryContext = false;
         this.master = ctx.createGain();
-        this.master.gain.value = 0.56;
+        this.master.gain.value = 0.78;
         this.compressor = ctx.createDynamicsCompressor();
-        this.compressor.threshold.value = -16;
-        this.compressor.knee.value = 18;
-        this.compressor.ratio.value = 5;
+        this.compressor.threshold.value = -12;
+        this.compressor.knee.value = 10;
+        this.compressor.ratio.value = 8;
         this.compressor.attack.value = 0.003;
         this.compressor.release.value = 0.14;
         this.master.connect(this.compressor);
         this.compressor.connect(ctx.destination);
+        const controller = new AbortController();
+        this.sampleAbort = controller;
+        // Loading is independent from resume and never replays a sound on completion.
+        void Promise.resolve()
+          .then(() => this.loadSamples(ctx, controller.signal))
+          .then((bank) => {
+            if (this.context === ctx && !controller.signal.aborted && !this.disposed)
+              this.samples = bank;
+          })
+          .catch(() => {
+            /* Local procedural fallback remains available. */
+          });
         ctx.onstatechange = () => {
           if (ctx !== this.context || this.disposed) return;
           if (ctx.state !== 'running') this.stopAll();
-          else this.ensureBackground();
           this.notifyStatus();
         };
       } else if (this.context.state === 'running') {
-        this.ensureBackground();
         this.notifyStatus();
         return Promise.resolve(this.canOutput());
       }
@@ -170,7 +186,6 @@ export class KitchenAudio {
         this.notifyStatus();
         return Promise.resolve(false);
       }
-      this.ensureBackground();
       this.notifyStatus();
       return new Promise<boolean>((resolve) => {
         let settled = false;
@@ -184,7 +199,6 @@ export class KitchenAudio {
           }
           const running = resumed && ctx.state === 'running';
           this.retryContext = !running && ctx.state !== 'running';
-          if (running) this.ensureBackground();
           this.notifyStatus();
           resolve(running && this.canOutput());
         };
@@ -226,7 +240,6 @@ export class KitchenAudio {
 
   setRecipe(recipe: RecipeId | Recipe) {
     this.recipe = typeof recipe === 'string' ? recipe : recipe.id;
-    this.updateAmbience();
   }
 
   setPhase(phase: AudioPhase) {
@@ -236,61 +249,44 @@ export class KitchenAudio {
       this.stopAll();
       return;
     }
-    // Preserve the final impact's short release underneath the result jingle.
-    this.stopBackground();
-    this.ensureBackground();
+    // Preserve the final impact's short release underneath the result cue.
+    this.stopMix();
   }
 
-  /** Modulates the sound bed only. Event cues remain explicit play() calls. */
-  setEvent(event: ArenaEvent) {
-    if (this.event === event) return;
-    this.event = event;
-    this.updateAmbience();
-  }
+  /** State changes are silent. Audible event accents require a fresh play() call. */
+  setEvent(_event: ArenaEvent) {}
 
   setMix(amount: number) {
     const value = safe(amount, 0, 0, 1);
-    if (!this.canPlay() || this.phase !== 'mixing') {
-      this.mixAmount = 0;
+    if (!this.canPlay() || this.phase !== 'mixing' || value < 0.04) {
+      this.stopMix();
       return;
     }
-    this.ensureBackground();
-    const ctx = this.context!,
-      channel = this.mixing;
-    if (!channel) return;
-    const now = ctx.currentTime;
-    const stopping = value === 0 && this.mixAmount > 0;
-    if (!stopping && now - this.lastMix < (value === 0 ? 0.12 : 0.03)) return;
+    const now = this.context!.currentTime;
+    if (now - this.lastMix < 0.19 - value * 0.105) return;
     this.lastMix = now;
-    this.mixAmount = value;
-    channel.gain.gain.cancelScheduledValues(now);
-    channel.gain.gain.setTargetAtTime(value * 0.075, now, 0.025);
-    // Stale input goes silent on the audio clock, even when JS/rendering stalls.
-    channel.gain.gain.setTargetAtTime(0, now + 0.15, 0.025);
-    channel.filter.frequency.setTargetAtTime(340 + value * 1550, now, 0.035);
-    (channel.voice.source as AudioBufferSourceNode).playbackRate.setTargetAtTime(
-      0.65 + value * 0.9,
-      now,
-      0.035,
-    );
+    const step = this.mixStep++;
+    const pan = Math.sin(step * 1.4) * 0.35;
+    // A finite scrape follows this gesture only. It ends within 140 ms if JS stalls.
+    this.sample('rustle', 0.16 + value * 0.2, pan, 0.85 + value * 0.3, 0, 0.14, true);
+    if (step % 3 === 0)
+      this.sample('plate', 0.05 + value * 0.055, -pan, 0.8 + (step % 5) * 0.025, 0, 0.1, true);
   }
 
   slash(strength = 0.6) {
     if (!this.canPlay() || !['ready', 'countdown', 'playing'].includes(this.phase)) return;
     const now = this.context!.currentTime;
-    if (now - this.lastSlash < 0.065) return;
+    if (now - this.lastSlash < 0.085) return;
     this.lastSlash = now;
     const intensity = safe(strength, 0.6, 0, 1);
-    this.noise(
-      0.065 + intensity * 0.045,
-      0.025 + intensity * 0.028,
-      2900 + intensity * 1600,
-      650,
-      'bandpass',
-      0.65,
+    this.sample(
+      this.variation++ % 2 ? 'slice-a' : 'slice-b',
+      0.1 + intensity * 0.12,
       0,
+      0.96 + intensity * 0.08,
+      0,
+      0.14,
     );
-    this.tone(2200 + intensity * 700, 800, 0.065, 0.006, 'sine', 0);
   }
 
   play(kind: AudioKind, context: SoundContext = {}) {
@@ -309,92 +305,88 @@ export class KitchenAudio {
     if (now - (this.lastSounds.get(kind) ?? -Infinity) < gap) return;
     this.lastSounds.set(kind, now);
     const pan = safe(context.pan, 0, -0.8, 0.8);
-    const pitch = 2 ** (safe(context.combo, 0, 0, 16) / 48);
+    // Combos add a little weight, not an ever-higher electronic pitch.
+    const weight = 1 + safe(context.combo, 0, 0, 16) * 0.006;
     switch (kind) {
       case 'good':
-        this.cut(context.food, pitch, pan);
+        this.cut(context.food, weight, pan);
         break;
       case 'bad':
-        this.noise(0.16, 0.11, 950, 240, 'lowpass', 0.8, pan);
-        this.tone(145, 48, 0.23, 0.15, 'triangle', pan);
+        this.sample('wood-b', 0.66, pan, 0.8);
+        this.sample('thud', 0.4, pan, 0.86, 0.016);
         break;
       case 'danger':
-        this.noise(0.38, 0.19, 1800, 130, 'lowpass', 0.6, pan);
-        this.tone(100, 28, 0.48, 0.2, 'sine', pan);
-        this.noise(0.06, 0.08, 4000, 600, 'bandpass', 1, pan);
+        this.sample('pot', 0.58, pan, 0.7, 0, 0.48);
+        this.sample('thud', 0.7, pan, 0.72);
+        this.sample('wood-b', 0.3, -pan, 0.8, 0.045);
         break;
       case 'shield':
-        this.bells([392, 587.33, 783.99], 0.065, 0.075, pan);
-        this.noise(0.24, 0.025, 1400, 4200, 'bandpass', 1.6, pan);
+        this.sample('plate', 0.45, pan, 1.06);
+        this.sample('glass', 0.24, -pan, 1.04, 0.065);
         break;
       case 'blocked':
-        this.bell(987.77, 0.34, 0.085, pan);
-        this.bell(1480, 0.22, 0.035, -pan, 0.02);
-        this.noise(0.08, 0.04, 4200, 1800, 'highpass', 1, pan);
+        this.sample('pot', 0.3, pan, 1.2, 0, 0.22);
+        this.sample('glass', 0.19, -pan, 1.02, 0.015);
         break;
       case 'heal':
-        this.bells([523.25, 659.25, 783.99, 1046.5], 0.075, 0.06, pan);
-        this.noise(0.3, 0.018, 900, 2800, 'bandpass', 0.8, pan);
+        this.sample('glass', 0.32, pan, 0.96);
+        this.sample('plate', 0.28, -pan, 1.12, 0.09);
         break;
       case 'full-health':
-        this.bells([783.99, 1046.5], 0.055, 0.04, pan);
+        this.sample('glass', 0.17, pan, 1.08, 0, 0.14);
         break;
       case 'slow':
-        this.bells([1046.5, 783.99, 523.25], 0.09, 0.06, pan);
-        this.noise(0.4, 0.035, 3500, 280, 'bandpass', 2.2, pan);
+        this.sample('rustle', 0.26, pan, 0.75, 0, 0.2);
+        this.sample('wood-a', 0.28, -pan, 0.82, 0.06);
+        this.sample('wood-a', 0.18, pan, 0.75, 0.23);
         break;
       case 'rush':
-        this.noise(0.34, 0.06, 300, 3200, 'bandpass', 0.7, 0);
-        this.tone(146.83, 293.66, 0.32, 0.065, 'triangle', 0);
-        this.bells([587.33, 783.99], 0.08, 0.05, 0);
+        [0, 0.09, 0.15].forEach((delay, i) =>
+          this.sample('wood-b', 0.32 + i * 0.07, (i - 1) * 0.25, 0.98 + i * 0.04, delay),
+        );
+        this.sample('slice-a', 0.26, 0.2, 1.08, 0.15);
         break;
       case 'rare-reveal':
-        this.bells([783.99, 1174.66, 1567.98], 0.085, 0.045, pan);
-        this.noise(0.28, 0.015, 2500, 6500, 'highpass', 0.7, pan);
+        this.sample('glass', 0.22, -0.18, 1.08);
+        this.sample('plate', 0.14, 0.18, 1.18, 0.12);
         break;
       case 'focus-start':
-        this.bells([659.25, 987.77, 1318.51], 0.04, 0.065, pan);
-        this.tone(130.81, 261.63, 0.15, 0.05, 'triangle', pan);
+        this.sample('slice-b', 0.27, pan);
+        this.sample('plate', 0.32, -pan, 0.98, 0.035);
         break;
       case 'focus-cut':
-        this.cut(context.food, pitch * 1.18, pan, 0.65);
-        this.bell(1046.5 * pitch, 0.13, 0.028, pan);
+        this.cut(context.food, weight, pan, 0.8);
         break;
       case 'focus-end':
-        this.bells([783.99, 1046.5, 1318.51, 1567.98], 0.055, 0.055, pan);
+        this.sample('plate', 0.42, pan, 1);
+        this.sample('wood-a', 0.3, -pan, 1.08, 0.07);
+        this.sample('glass', 0.2, pan, 1.08, 0.14);
         break;
       case 'countdown':
-        this.tone(
-          context.step === 1 ? 783.99 : 523.25,
-          context.step === 1 ? 783.99 : 523.25,
-          0.085,
-          0.075,
-          'sine',
-          0,
-        );
-        this.noise(0.025, 0.025, 2500, 1800, 'bandpass', 1, 0);
+        this.sample('wood-a', 0.42, 0, context.step === 1 ? 1.1 : 0.96);
+        if (context.step === 1) this.sample('wood-a', 0.2, 0.12, 1.05, 0.075);
         break;
       case 'start':
-        this.bells([523.25, 659.25, 783.99], 0.045, 0.06, 0);
+        this.sample('wood-a', 0.42, -0.15);
+        this.sample('wood-b', 0.4, 0.15, 1.03, 0.075);
+        this.sample('plate', 0.34, 0, 1.12, 0.15);
         break;
       case 'mix-start':
-        this.bell(440, 0.4, 0.065, -0.15);
-        this.noise(0.18, 0.04, 850, 1600, 'bandpass', 1.2, 0.15);
+        this.sample('plate', 0.38, -0.15, 0.88);
+        this.sample('wood-a', 0.26, 0.15, 1.02, 0.07);
         break;
       case 'win':
-        this.bells([523.25, 659.25, 783.99, 1046.5], 0.11, 0.085, 0);
-        this.bell(1318.51, 0.95, 0.04, 0.25, 0.34);
-        this.bell(1567.98, 0.85, 0.03, -0.25, 0.39);
+        this.sample('plate', 0.5, 0, 0.92);
+        this.sample('glass', 0.32, -0.2, 1.04, 0.14);
+        this.sample('plate', 0.28, 0.2, 1.14, 0.27);
+        this.sample('glass', 0.2, 0, 1.16, 0.38);
         break;
       case 'lose':
-        [392, 329.63, 261.63].forEach((frequency, index) =>
-          this.tone(frequency, frequency * 0.96, 0.25, 0.055, 'triangle', 0, index * 0.14),
-        );
-        this.noise(0.16, 0.025, 650, 240, 'lowpass', 0.8, 0, 0.3);
+        this.sample('thud', 0.43, 0, 0.76);
+        this.sample('pot', 0.27, -0.1, 0.8, 0.14, 0.28);
         break;
       case 'select':
-        this.tone(660, 880, 0.055, 0.035, 'sine', 0);
-        this.noise(0.018, 0.016, 2000, 1400, 'bandpass', 1, 0);
+        this.sample('wood-a', 0.22, 0, 1.13, 0, 0.07);
         break;
     }
   }
@@ -402,7 +394,6 @@ export class KitchenAudio {
   /** Also cancels all future notes already scheduled on the audio clock. */
   stop() {
     this.phase = 'menu';
-    this.event = 'normal';
     this.stopAll();
   }
 
@@ -418,7 +409,6 @@ export class KitchenAudio {
 
   private onVisibility = () => {
     if (this.page?.hidden) this.stopAll();
-    else this.ensureBackground();
     this.notifyStatus();
   };
 
@@ -437,7 +427,11 @@ export class KitchenAudio {
     }
     this.master?.disconnect();
     this.compressor?.disconnect();
-    this.context = this.master = this.compressor = this.noiseBuffer = undefined;
+    this.sampleAbort?.abort();
+    this.sampleAbort = undefined;
+    this.samples = {};
+    this.fallback = {};
+    this.context = this.master = this.compressor = undefined;
     this.retryContext = false;
   }
 
@@ -455,56 +449,56 @@ export class KitchenAudio {
     return this.phase !== 'paused' && this.canOutput();
   }
 
-  private cut(food: FoodKind | undefined, pitch: number, pan: number, amount = 1) {
+  private cut(food: FoodKind | undefined, weight: number, pan: number, amount = 1) {
     const fallback: FoodKind =
       this.recipe === 'cake' ? 'chocolate' : this.recipe === 'tacos' ? 'onion' : 'lettuce';
     const texture = TEXTURES[food ?? fallback];
-    // Small variations keep repeated ingredients recognizable without identical clicks.
-    const p = pitch * (0.94 + ((this.variation++ * 7) % 13) / 100);
-    if (texture === 'crisp') {
-      this.noise(0.085, 0.09 * amount, 2500 * p, 1100, 'highpass', 0.7, pan);
-      this.noise(0.035, 0.055 * amount, 4200, 1800, 'bandpass', 1.2, pan, 0.018);
-      this.tone(175 * p, 90, 0.075, 0.065 * amount, 'triangle', pan);
-    } else if (texture === 'wet') {
-      this.noise(0.14, 0.085 * amount, 1550 * p, 280, 'lowpass', 1.7, pan);
-      this.tone(240 * p, 75, 0.09, 0.07 * amount, 'sine', pan);
-      this.noise(0.026, 0.035 * amount, 3200, 1600, 'bandpass', 0.8, pan);
-    } else if (texture === 'brittle') {
-      this.noise(0.045, 0.09 * amount, 3300 * p, 1400, 'highpass', 0.8, pan);
-      this.tone(850 * p, 510 * p, 0.045, 0.035 * amount, 'triangle', pan);
-      this.noise(0.035, 0.04 * amount, 2100, 850, 'bandpass', 1.1, pan, 0.03);
-    } else if (texture === 'powder') {
-      this.noise(0.2, 0.065 * amount, 4300 * p, 1900, 'highpass', 0.6, pan);
-      this.tone(145, 90, 0.06, 0.03 * amount, 'sine', pan);
-    } else {
-      this.noise(
-        texture === 'dry' ? 0.075 : 0.11,
-        0.07 * amount,
-        texture === 'dry' ? 2300 * p : 700 * p,
-        400,
-        'lowpass',
-        0.65,
+    const variation = this.variation++;
+    const rate = 0.96 + ((variation * 7) % 9) * 0.01;
+    const volume = amount * weight;
+    this.sample('chop', 0.5 * volume, pan, rate, 0, 0.18);
+    this.sample(variation % 2 ? 'wood-a' : 'wood-b', 0.18 * volume, pan, rate, 0.008, 0.1);
+    if (texture === 'crisp' || texture === 'dry' || texture === 'powder')
+      this.sample(
+        'rustle',
+        (texture === 'crisp' ? 0.3 : 0.17) * volume,
         pan,
+        rate * 1.12,
+        0.015,
+        0.1,
       );
-      this.tone(185 * p, 95, 0.075, 0.07 * amount, 'triangle', pan);
-    }
+    else if (texture === 'brittle')
+      this.sample('wood-a', 0.26 * volume, pan, rate * 1.2, 0.025, 0.065);
+    else this.sample('thud', (texture === 'wet' ? 0.25 : 0.16) * volume, pan, rate * 0.86, 0, 0.12);
   }
 
-  private bells(notes: number[], spacing: number, level: number, pan: number) {
-    notes.forEach((frequency, index) => this.bell(frequency, 0.44, level, pan, index * spacing));
-  }
-
-  private bell(frequency: number, duration: number, level: number, pan: number, delay = 0) {
-    this.tone(frequency, frequency * 0.997, duration, level, 'sine', pan, delay);
-    this.tone(
-      frequency * 2.76,
-      frequency * 2.75,
-      duration * 0.38,
-      level * 0.17,
-      'sine',
-      pan,
-      delay,
-    );
+  private sample(
+    id: KitchenSample,
+    level: number,
+    pan = 0,
+    rate = 1,
+    delay = 0,
+    maxDuration = 1,
+    mixing = false,
+  ) {
+    const ctx = this.context!,
+      start = ctx.currentTime + delay;
+    const buffer = this.samples[id] ?? (this.fallback[id] ??= makeKitchenFallback(ctx, id));
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.setValueAtTime(rate, start);
+    const duration = Math.min(buffer.duration / rate, maxDuration);
+    const gain = ctx.createGain();
+    // Keep the original sample's micro-dynamics; only soften its cut boundaries.
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(level, start + 0.003);
+    gain.gain.setValueAtTime(level, start + Math.max(0.003, duration - 0.018));
+    gain.gain.linearRampToValueAtTime(0, start + duration);
+    source.connect(gain);
+    const voice = this.route(source, gain, [], pan);
+    if (mixing) this.mixing.add(voice);
+    source.start(start);
+    source.stop(start + duration);
   }
 
   private tone(
@@ -530,34 +524,6 @@ export class KitchenAudio {
     oscillator.stop(start + duration + 0.015);
   }
 
-  private noise(
-    duration: number,
-    level: number,
-    from: number,
-    to: number,
-    type: BiquadFilterType,
-    q: number,
-    pan: number,
-    delay = 0,
-  ) {
-    const ctx = this.context!,
-      start = ctx.currentTime + delay;
-    const source = ctx.createBufferSource();
-    source.buffer = this.getNoiseBuffer();
-    const filter = ctx.createBiquadFilter();
-    filter.type = type;
-    filter.Q.value = q;
-    filter.frequency.setValueAtTime(from, start);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(40, to), start + duration);
-    const gain = ctx.createGain();
-    this.envelope(gain.gain, start, duration, level, 0.002);
-    source.connect(filter);
-    filter.connect(gain);
-    this.route(source, gain, [filter], pan);
-    source.start(start, Math.random() * Math.max(0, source.buffer.duration - duration - 0.1));
-    source.stop(start + duration + 0.015);
-  }
-
   private envelope(
     param: AudioParam,
     start: number,
@@ -571,25 +537,14 @@ export class KitchenAudio {
     param.linearRampToValueAtTime(0, start + duration + 0.01);
   }
 
-  private getNoiseBuffer(): AudioBuffer {
-    if (!this.noiseBuffer) {
-      const ctx = this.context!;
-      this.noiseBuffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 4), ctx.sampleRate);
-      const samples = this.noiseBuffer.getChannelData(0);
-      for (let index = 0; index < samples.length; index++) samples[index] = Math.random() * 2 - 1;
-    }
-    return this.noiseBuffer;
-  }
-
   private route(
     source: AudioScheduledSourceNode,
     gain: GainNode,
     extra: AudioNode[],
     pan: number,
-    persistent = false,
   ): Voice {
     if (this.voices.size >= MAX_VOICES) {
-      const oldest = [...this.voices].find((voice) => !voice.persistent);
+      const oldest = this.voices.values().next().value;
       if (oldest) this.kill(oldest);
     }
     const nodes: AudioNode[] = [source, ...extra, gain];
@@ -600,7 +555,7 @@ export class KitchenAudio {
       panner.connect(this.master!);
       nodes.push(panner);
     } else gain.connect(this.master!);
-    const voice = { source, nodes, persistent };
+    const voice = { source, nodes };
     this.voices.add(voice);
     source.onended = () => this.release(voice);
     return voice;
@@ -610,6 +565,7 @@ export class KitchenAudio {
     voice.source.onended = null;
     voice.nodes.forEach((node) => node.disconnect());
     this.voices.delete(voice);
+    this.mixing.delete(voice);
   }
 
   private kill(voice: Voice) {
@@ -622,62 +578,15 @@ export class KitchenAudio {
     this.release(voice);
   }
 
-  private loop(frequency: number, q: number, pan: number): Channel {
-    const ctx = this.context!;
-    const source = ctx.createBufferSource();
-    source.buffer = this.getNoiseBuffer();
-    source.loop = true;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = frequency;
-    filter.Q.value = q;
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    source.connect(filter);
-    filter.connect(gain);
-    const voice = this.route(source, gain, [filter], pan, true);
-    source.start(ctx.currentTime, Math.random() * source.buffer.duration);
-    return { voice, filter, gain };
-  }
-
-  private ensureBackground() {
-    if (!this.canPlay()) return;
-    if (this.phase === 'playing' && !this.ambience) {
-      this.ambience = this.loop(800, 0.45, -0.12);
-      this.updateAmbience();
-    } else if (this.phase === 'mixing' && !this.mixing) {
-      this.mixing = this.loop(340, 2, 0.08);
-      // No old mixing energy is replayed after unmute or visibility return.
-    }
-  }
-
-  private updateAmbience() {
-    if (!this.ambience || !this.canPlay()) return;
-    const now = this.context!.currentTime;
-    const center = this.recipe === 'cake' ? 420 : this.recipe === 'tacos' ? 1120 : 780;
-    this.ambience.filter.frequency.setTargetAtTime(
-      center * (this.event === 'slow' ? 0.55 : 1),
-      now,
-      0.2,
-    );
-    this.ambience.gain.gain.setTargetAtTime(
-      this.event === 'focus' ? 0.004 : this.event === 'rush' ? 0.018 : 0.01,
-      now,
-      0.15,
-    );
-  }
-
-  private stopBackground() {
-    if (this.ambience) this.kill(this.ambience.voice);
-    if (this.mixing) this.kill(this.mixing.voice);
-    this.ambience = this.mixing = null;
-    this.mixAmount = 0;
+  private stopMix() {
+    [...this.mixing].forEach((voice) => this.kill(voice));
     this.lastMix = -Infinity;
+    this.mixStep = 0;
   }
 
   private stopAll() {
     this.generation++;
-    this.stopBackground();
+    this.stopMix();
     [...this.voices].forEach((voice) => this.kill(voice));
     this.lastSounds.clear();
     this.lastSlash = -Infinity;

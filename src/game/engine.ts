@@ -1,4 +1,5 @@
 import type { FoodKind, Recipe } from './recipes';
+import { COUNTDOWN_SECONDS, CUT_SECONDS, MIX_FILL_SECONDS, MIX_SECONDS } from '../../shared/round';
 import {
   ACTIVE_LIFETIME,
   DANGER_HEARTS,
@@ -49,8 +50,7 @@ export interface GameState {
   shieldRemaining: number;
   focus: FocusState | null;
 }
-export const CUT_SECONDS = 80;
-export const MIX_SECONDS = 8;
+export { COUNTDOWN_SECONDS, CUT_SECONDS, MIX_SECONDS } from '../../shared/round';
 export class GameEngine {
   state: GameState = {
     phase: 'ready',
@@ -61,7 +61,7 @@ export class GameEngine {
     bestCombo: 0,
     elapsed: 0,
     remaining: CUT_SECONDS,
-    countdown: 3,
+    countdown: COUNTDOWN_SECONDS,
     mix: 0,
     counts: {},
     outcome: null,
@@ -126,8 +126,9 @@ export class GameEngine {
       return;
     }
     if (s.phase === 'mixing') {
+      dt = Math.min(dt, s.remaining);
       s.remaining = Math.max(0, s.remaining - dt);
-      s.mix = Math.min(1, s.mix + (Math.max(0, Math.min(1, stir || 0)) * dt) / 4);
+      s.mix = Math.min(1, s.mix + (Math.max(0, Math.min(1, stir || 0)) * dt) / MIX_FILL_SECONDS);
       if (!s.remaining) {
         if (s.mix >= 0.35) {
           s.score += Math.round(s.mix * 500);

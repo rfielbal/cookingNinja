@@ -12,12 +12,20 @@ export function AtelierStage({
   reducedMotion,
   action,
   variant,
+  codeStep,
   onFrame,
 }: AtelierStageProps) {
   const container = useRef<HTMLDivElement>(null);
-  const current = useRef<AtelierSceneState>({ step, paused, reducedMotion, action, variant });
+  const current = useRef<AtelierSceneState>({
+    step,
+    paused,
+    reducedMotion,
+    action,
+    variant,
+    codeStep,
+  });
   const callback = useRef(onFrame);
-  current.current = { step, paused, reducedMotion, action, variant };
+  current.current = { step, paused, reducedMotion, action, variant, codeStep };
   callback.current = onFrame;
   const [unavailable, setUnavailable] = useState(false);
 

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ChefHat, Heart, Play, Trophy } from 'lucide-reac
 import { RECIPES, FOODS, type Recipe } from '../game/recipes';
 import { audio } from '../game/audio';
 import { DishArt } from './DishArt';
+import { CUT_SECONDS, MIX_SECONDS } from '../../shared/round';
 
 interface Props {
   screen: 'home' | 'recipes';
@@ -143,9 +144,9 @@ export function ArcadeMenu(p: Props) {
           </p>
         )}
         <span className="stage-time">
-          80 s de découpe
+          {CUT_SECONDS} s de découpe
           <br />
-          <strong>8 s de mélange</strong>
+          <strong>{MIX_SECONDS} s de mélange</strong>
         </span>
         <span className="stage-hearts">
           <Heart fill="currentColor" size={18} />

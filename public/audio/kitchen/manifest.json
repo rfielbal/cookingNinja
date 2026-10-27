@@ -1,0 +1,82 @@
+[
+  {
+    "file": "chop.wav",
+    "pack": "rpg",
+    "original": "Audio/chop.ogg",
+    "seconds": 0.226417,
+    "sourceSha256": "d00c2b3c9fff07e376145c8c8c45c90e5084ec192f6ce0387db233f7b86f1486",
+    "sha256": "5d18d3878d07b9d2d05a46585059f2587c7a1853f8e61a94c4132548b3f385ec"
+  },
+  {
+    "file": "slice-a.wav",
+    "pack": "rpg",
+    "original": "Audio/knifeSlice.ogg",
+    "seconds": 0.16,
+    "sourceSha256": "4cd96dc630bed9840c15f1dd2306da2cc56a4da26a5d3f1a03c5a7265ac5e54f",
+    "sha256": "44b86affa235f949b27a57cb51297208a8fa9526929d00253afd8bcaf797992e"
+  },
+  {
+    "file": "slice-b.wav",
+    "pack": "rpg",
+    "original": "Audio/knifeSlice2.ogg",
+    "seconds": 0.16,
+    "sourceSha256": "6c2064d0ef988d1ec3d56868e823ea8823a5cac00f2742560052633529407def",
+    "sha256": "ee227c8c07460c663302525adcb751988a257a017cead1efdc91a6ad601a0808"
+  },
+  {
+    "file": "rustle.wav",
+    "pack": "rpg",
+    "original": "Audio/cloth1.ogg",
+    "seconds": 0.18,
+    "sourceSha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+    "sha256": "3907b6a94586c4de06f77e3bcce8501fd7553879cbde9243d40f0a585e0a5383"
+  },
+  {
+    "file": "wood-a.wav",
+    "pack": "impact",
+    "original": "Audio/impactWood_light_000.ogg",
+    "seconds": 0.12,
+    "sourceSha256": "eb45e35b4bed784d3f120de4afec4b0d6ac09d9e143cce8cfcb7d739e1b1f3c3",
+    "sha256": "1ca51bfa0acabad19e2ec883a0f8df1273a53debcbc81a25c39af7fcde65229f"
+  },
+  {
+    "file": "wood-b.wav",
+    "pack": "impact",
+    "original": "Audio/impactWood_medium_001.ogg",
+    "seconds": 0.15,
+    "sourceSha256": "15271dbe8e2872dbb0ff1aeb7b12b2d2b92b7c1951c88532b9ab9158c36dfc73",
+    "sha256": "4bbc422eeff51629668ede6a8abd10aa2553e783c7920d80dfa1f53206bf0707"
+  },
+  {
+    "file": "thud.wav",
+    "pack": "impact",
+    "original": "Audio/impactSoft_heavy_000.ogg",
+    "seconds": 0.18,
+    "sourceSha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+    "sha256": "a301346353905f710cd60dfd79589aef9c46b2955ff2ce976008581e14d6f959"
+  },
+  {
+    "file": "plate.wav",
+    "pack": "impact",
+    "original": "Audio/impactPlate_light_000.ogg",
+    "seconds": 0.33,
+    "sourceSha256": "6e797cf8a5bfc52d7ed5eb47c227974c1cf2a674954fec5b539cea7d62c7282c",
+    "sha256": "42766ce26d3355e41eb34f404c52e2184c039c38fc39d6522e5b3d99f2c4a7a8"
+  },
+  {
+    "file": "glass.wav",
+    "pack": "impact",
+    "original": "Audio/impactGlass_light_000.ogg",
+    "seconds": 0.230748,
+    "sourceSha256": "d750cf88097d0c3e69920e6e14496e1444e1a9da01aa4cca8f5ec8cb44c57b4f",
+    "sha256": "2798329d3302ad02ea691ec76e2f45610b80b466f16e12fa8f9793cb4b227b84"
+  },
+  {
+    "file": "pot.wav",
+    "pack": "rpg",
+    "original": "Audio/metalPot2.ogg",
+    "seconds": 0.48,
+    "sourceSha256": "8e1f820d217d380fde10e969d109db34303e3f4d11c3951926eddef813d04ae2",
+    "sha256": "096a1b8dda05cef6e0b7106667daf82222e81127ccf8696ebbf92d2a33423e4f"
+  }
+]

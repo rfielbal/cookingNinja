@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameEngine } from '../src/game/engine';
+import { COUNTDOWN_SECONDS, CUT_SECONDS, MIX_SECONDS, GameEngine } from '../src/game/engine';
 import {
   DANGER_HEARTS,
   FOCUS_CUT_INTERVAL,
@@ -10,7 +10,9 @@ import {
   isSpecialKind,
   MAX_HEARTS,
   maximumSpawns,
+  RUSH_WINDOWS,
   RUSH_WORLD_SPEED,
+  SHINY_SPAWN_TIMES,
   SHIELD_SECONDS,
   SLOW_POINTS,
   SLOW_SECONDS,
@@ -48,11 +50,11 @@ test('complete recipe transitions to timed mixing and victory only with movement
     () => 0.5,
   );
   game.start();
-  advance(game, 89.3);
+  advance(game, COUNTDOWN_SECONDS + CUT_SECONDS + 2 * FOCUS_SECONDS + 0.2);
   assert.equal(game.state.phase, 'mixing');
   assert.equal(game.complete, true);
   const score = game.state.score;
-  advance(game, 8.1, 1);
+  advance(game, MIX_SECONDS + 0.1, 1);
   assert.equal(game.state.outcome, 'won');
   assert.equal(game.state.mix, 1);
   assert.ok(game.state.score > score);
@@ -65,13 +67,13 @@ test('idle mixing does not award an unearned win', () => {
     () => 0.5,
   );
   game.start();
-  advance(game, 98);
+  advance(game, COUNTDOWN_SECONDS + CUT_SECONDS + MIX_SECONDS + 2 * FOCUS_SECONDS + 0.3);
   assert.equal(game.state.outcome, 'mix');
 });
 test('timeout with missing ingredients fails instead of serving incomplete recipe', () => {
   const game = new GameEngine(RECIPES[0], () => {});
   game.start();
-  advance(game, 83.5);
+  advance(game, COUNTDOWN_SECONDS + CUT_SECONDS + 0.1);
   assert.equal(game.state.outcome, 'ingredients');
 });
 test('pause freezes countdown, timer, spawn and mixing; resume preserves phase', () => {
@@ -141,29 +143,37 @@ test('le score des ingrédients hors événement conserve le combo historique', 
 
 test('les deux frénésies accélèrent le monde et la cadence sans multiplier les points', () => {
   const { game, spawned } = arena();
-  advanceTo(game, 19.9);
+  const first = RUSH_WINDOWS[0];
+  const length = first.end - first.start;
+  advanceTo(game, first.start - 0.1);
   assert.equal(game.state.event, 'normal');
-  advanceTo(game, 20);
+  advanceTo(game, first.start);
   assert.equal(game.state.event, 'rush');
-  assert.equal(game.state.eventRemaining, 10);
+  assert.equal(game.state.eventRemaining, length);
   assert.equal(game.state.worldSpeed, RUSH_WORLD_SPEED);
-  const ingredient = spawned.filter((item) => !isSpecialKind(item.kind)).at(-1)!;
+  const ingredient = spawned.filter((item) => !isSpecialKind(item.kind) && !item.shiny).at(-1)!;
   assert.equal(game.hit(ingredient.id), 'good');
   assert.equal(game.state.score, 100);
-  advanceTo(game, 30);
+  advanceTo(game, first.end);
   assert.equal(game.state.event, 'normal');
   assert.equal(game.state.worldSpeed, 1);
   const normalCount = spawned.filter(
-    (item) => !isSpecialKind(item.kind) && !item.shiny && item.at >= 10 && item.at < 20,
+    (item) =>
+      !isSpecialKind(item.kind) &&
+      !item.shiny &&
+      item.at >= first.start - length &&
+      item.at < first.start,
   ).length;
   const rushCount = spawned.filter(
-    (item) => !isSpecialKind(item.kind) && !item.shiny && item.at >= 20 && item.at < 30,
+    (item) =>
+      !isSpecialKind(item.kind) && !item.shiny && item.at >= first.start && item.at < first.end,
   ).length;
   assert.ok(rushCount >= normalCount * 1.35, `${rushCount} rush / ${normalCount} normal`);
-  advanceTo(game, 50);
+  const second = RUSH_WINDOWS[1];
+  advanceTo(game, second.start);
   assert.equal(game.state.event, 'rush');
-  assert.equal(game.state.eventRemaining, 10);
-  advanceTo(game, 60);
+  assert.equal(game.state.eventRemaining, second.end - second.start);
+  advanceTo(game, second.end);
   assert.equal(game.state.event, 'normal');
 });
 
@@ -242,8 +252,8 @@ test('une bombe retire deux cœurs, casse le combo et ne compte que pour une err
 test('le sablier ralentit la cadence cinq secondes, reste cumulable au rush et se fige en pause', () => {
   const slow = arena();
   const regular = arena();
-  advanceTo(slow.game, 24.1);
-  advanceTo(regular.game, 24.1);
+  advanceTo(slow.game, 31);
+  advanceTo(regular.game, 31);
   const hourglass = slow.spawned.find((item) => item.kind === 'slow')!;
   assert.equal(slow.game.hit(hourglass.id), 'slow');
   assert.equal(slow.game.state.score, SLOW_POINTS);
@@ -258,13 +268,13 @@ test('le sablier ralentit la cadence cinq secondes, reste cumulable au rush et s
   assert.deepEqual(slow.game.snapshot(), paused);
   assert.equal(slow.game.hit('invented'), null);
   slow.game.resume();
-  advanceTo(slow.game, 29.11);
-  advanceTo(regular.game, 29.11);
+  advanceTo(slow.game, 36.01);
+  advanceTo(regular.game, 36.01);
   assert.equal(slow.game.state.event, 'rush');
   assert.equal(slow.game.state.worldSpeed, RUSH_WORLD_SPEED);
-  const regularCount = regular.spawned.filter((item) => item.at > 24.1).length;
+  const regularCount = regular.spawned.filter((item) => item.at > 31).length;
   assert.ok(slow.spawned.length - beforeCount < regularCount);
-  assert.ok(Math.abs(slow.game.state.elapsed - 29.11) < 1e-8);
+  assert.ok(Math.abs(slow.game.state.elapsed - 36.01) < 1e-8);
 });
 
 test('les objets expirent en temps monde pour rester découpables pendant le ralentissement', () => {
@@ -279,7 +289,7 @@ test('les objets expirent en temps monde pour rester découpables pendant le ral
   assert.equal(game.hit(ingredients[1].id), null);
 });
 
-test('un ralentissement en fin de partie ne prolonge ni la découpe ni le mélange', () => {
+test('un ralentissement ne prolonge ni la découpe ni le mélange', () => {
   let lateHourglass = '';
   let game: GameEngine;
   game = new GameEngine(
@@ -292,34 +302,34 @@ test('un ralentissement en fin de partie ne prolonge ni la découpe ni le mélan
   );
   game.start();
   while (game.state.phase === 'countdown') game.tick(0.05);
-  advanceTo(game, 79);
+  advanceTo(game, 24.1);
   assert.equal(game.hit(lateHourglass), 'slow');
   assert.equal(game.state.event, 'slow');
-  advanceTo(game, 80);
-  assert.equal(game.state.elapsed, 80);
+  advanceTo(game, CUT_SECONDS);
+  assert.equal(game.state.elapsed, CUT_SECONDS);
   assert.equal(game.state.phase, 'mixing');
-  assert.equal(game.state.remaining, 8);
+  assert.equal(game.state.remaining, MIX_SECONDS);
   assert.equal(game.state.worldSpeed, 1);
   assert.equal(game.state.event, 'normal');
-  advance(game, 8.1, 1);
+  advance(game, MIX_SECONDS + 0.1, 1);
   assert.equal(game.state.outcome, 'won');
 });
 
 test('les objets spéciaux sont réguliers, bornés et ne remplacent pas les aliments', () => {
   for (const recipe of RECIPES) {
     const { game, spawned } = arena(recipe);
-    advanceTo(game, 80);
+    advanceTo(game, CUT_SECONDS);
     const specials = spawned.filter((item) => isSpecialKind(item.kind));
     assert.deepEqual(
       specials.map(({ kind }) => kind),
-      ['shield', 'danger', 'slow', 'shield', 'danger', 'slow', 'shield', 'danger', 'slow'],
+      ['shield', 'danger', 'slow', 'shield', 'danger'],
     );
     specials.forEach((item, index) => assert.ok(Math.abs(item.at - (index + 1) * 8) < 0.051));
-    assert.ok(spawned.length <= maximumSpawns(80, recipe.spawnInterval));
+    assert.ok(spawned.length <= maximumSpawns(CUT_SECONDS, recipe.spawnInterval));
     const shiny = spawned.filter((item) => item.shiny);
     assert.equal(shiny.length, 2);
-    assert.ok(Math.abs(shiny[0].at - 12) < 0.051);
-    assert.ok(Math.abs(shiny[1].at - 42) < 0.051);
+    assert.ok(Math.abs(shiny[0].at - SHINY_SPAWN_TIMES[0]) < 0.051);
+    assert.ok(Math.abs(shiny[1].at - SHINY_SPAWN_TIMES[1]) < 0.051);
     assert.ok(shiny.every((item) => item.target && !isSpecialKind(item.kind)));
     assert.equal(new Set(spawned.map(({ id }) => id)).size, spawned.length);
     const count = spawned.length;
@@ -378,13 +388,14 @@ test('un ingrédient brillant compte une fois puis le focus verse seulement les 
 
 test('le focus fige les autres objets, les pouvoirs et le chronomètre, y compris en pause', () => {
   const { game, spawned } = arena();
-  advanceTo(game, 39);
+  advanceTo(game, 31.9);
+  assert.equal(game.hit(spawned.find((item) => item.kind === 'slow')!.id), 'slow');
+  advanceTo(game, 32.1);
   const shield = spawned.filter((item) => item.kind === 'shield').at(-1)!;
   assert.equal(game.hit(shield.id), 'shield');
-  advanceTo(game, 48.1);
-  assert.equal(game.hit(spawned.filter((item) => item.kind === 'slow').at(-1)!.id), 'slow');
   const shiny = spawned.filter((item) => item.shiny).at(-1)!;
   const other = spawned.filter((item) => !isSpecialKind(item.kind) && !item.shiny).at(-1)!;
+  const slowRemaining = game.state.eventRemaining;
   assert.equal(game.hit(shiny.id), 'focus-start');
   const elapsed = game.state.elapsed;
   const remaining = game.state.remaining;
@@ -404,7 +415,7 @@ test('le focus fige les autres objets, les pouvoirs et le chronomètre, y compri
   assert.equal(game.state.remaining, remaining);
   assert.equal(game.state.shieldRemaining, shieldRemaining);
   assert.equal(game.state.event, 'slow');
-  assert.equal(game.state.eventRemaining, SLOW_SECONDS);
+  assert.equal(game.state.eventRemaining, slowRemaining);
   assert.equal(spawned.length, spawns);
   assert.equal(game.hit(other.id), 'good');
 });
@@ -430,9 +441,9 @@ test('les brillants privilégient les ingrédients manquants', () => {
 
 test('la frénésie accélère aussi l’expiration des identifiants selon le temps monde', () => {
   const { game, spawned } = arena();
-  advanceTo(game, 19.2);
+  advanceTo(game, RUSH_WINDOWS[0].start - 0.8);
   const ingredient = spawned.filter((item) => !isSpecialKind(item.kind) && !item.shiny).at(-1)!;
-  advanceTo(game, 25);
+  advanceTo(game, RUSH_WINDOWS[0].start + 5);
   assert.equal(game.hit(ingredient.id), null);
 });
 
@@ -460,15 +471,15 @@ test('trois cœurs supplémentaires au maximum soignent sans modifier le score n
       for (const key of ['score', 'hits', 'combo', 'bestCombo', 'mistakes', 'counts'] as const)
         assert.deepEqual(game.state[key], before[key], key);
     }
-    advanceTo(game, 80);
-    advanceTo(control.game, 80);
+    advanceTo(game, CUT_SECONDS);
+    advanceTo(control.game, CUT_SECONDS);
     assert.equal(spawned.filter((item) => item.kind === 'heart').length, 3);
     assert.equal(control.spawned.filter((item) => item.kind === 'heart').length, 0);
     assert.deepEqual(
       spawned.filter((item) => item.kind !== 'heart').map(({ kind, at }) => ({ kind, at })),
       control.spawned.map(({ kind, at }) => ({ kind, at })),
     );
-    assert.ok(spawned.length <= maximumSpawns(80, recipe.spawnInterval, true, true));
+    assert.ok(spawned.length <= maximumSpawns(CUT_SECONDS, recipe.spawnInterval, true, true));
     assert.equal(game.state.livesRecovered, 3);
     assert.equal(game.state.hearts, 3);
   }
@@ -504,12 +515,12 @@ test('une occasion à vie pleine est perdue et ne réapparaît pas après un dé
     game.hit(spawned.filter((item) => !item.target && item.kind !== 'danger').at(-1)!.id),
     'bad',
   );
-  advanceTo(game, 39.9);
+  advanceTo(game, 29.9);
   assert.equal(
     spawned.some((item) => item.kind === 'heart'),
     false,
   );
-  advanceTo(game, 40.1);
+  advanceTo(game, 30.1);
   assert.equal(spawned.filter((item) => item.kind === 'heart').length, 1);
 });
 
@@ -532,7 +543,7 @@ test('un cœur coupé à trois vies est consommé sans récompense ni dépasseme
 
 test('les occasions de cœur attendent la fin du focus et la pause fige aussi leurs objets', () => {
   const { game, spawned } = arena(RECIPES[0], () => 0);
-  advanceTo(game, 17.9);
+  advanceTo(game, 15.5);
   game.hit(spawned.filter((item) => !item.target && item.kind !== 'danger').at(-1)!.id);
   assert.equal(game.hit(spawned.find((item) => item.shiny)!.id), 'focus-start');
   advance(game, 1);
@@ -542,7 +553,7 @@ test('les occasions de cœur attendent la fin du focus et la pause fige aussi le
   assert.deepEqual(game.snapshot(), paused);
   game.resume();
   advance(game, 2);
-  assert.equal(game.state.elapsed, 17.9);
+  assert.equal(game.state.elapsed, 15.5);
   assert.equal(
     spawned.some((item) => item.kind === 'heart'),
     false,
@@ -550,9 +561,9 @@ test('les occasions de cœur attendent la fin du focus et la pause fige aussi le
   advanceTo(game, 18.1);
   const first = spawned.find((item) => item.kind === 'heart')!;
   assert.equal(game.hit(first.id), 'heal');
-  advanceTo(game, 39.9);
+  advanceTo(game, 29.9);
   game.hit(spawned.filter((item) => !item.target && item.kind !== 'danger').at(-1)!.id);
-  advanceTo(game, 40.1);
+  advanceTo(game, 30.1);
   const second = spawned.filter((item) => item.kind === 'heart').at(-1)!;
   game.pause();
   assert.equal(game.hit(second.id), null);
@@ -560,7 +571,7 @@ test('les occasions de cœur attendent la fin du focus et la pause fige aussi le
   advance(game, 20);
   assert.deepEqual(game.snapshot(), awaitingHeart);
   game.resume();
-  advanceTo(game, 42.1);
+  advanceTo(game, 31);
   assert.equal(game.hit(spawned.filter((item) => item.shiny).at(-1)!.id), 'focus-start');
   assert.equal(game.hit(second.id), null);
   advance(game, 3);
@@ -579,4 +590,82 @@ test('un cœur manqué expire normalement et ne soigne pas après sa disparition
   assert.equal(game.hit(heart.id), null);
   assert.equal(game.state.hearts, 2);
   assert.equal(game.state.livesRecovered, 0);
+});
+
+test('une partie complète dure 54 secondes, ou 60 avec les deux défis, sur chaque recette', () => {
+  for (const recipe of RECIPES) {
+    for (const cutRares of [false, true]) {
+      let game: GameEngine;
+      let focuses = 0;
+      game = new GameEngine(
+        recipe,
+        (id, kind, target, shiny) => {
+          if (!target || isSpecialKind(kind) || (shiny && !cutRares)) return;
+          if (game.hit(id) === 'focus-start') focuses += 1;
+        },
+        () => 0.5,
+      );
+      game.start();
+      let elapsed = 0;
+      while (game.state.phase !== 'result' && elapsed < 61) {
+        game.tick(0.05, 1);
+        elapsed += 0.05;
+      }
+      assert.equal(game.state.outcome, 'won', recipe.id);
+      assert.equal(focuses, cutRares ? 2 : 0);
+      const expected = COUNTDOWN_SECONDS + CUT_SECONDS + MIX_SECONDS + focuses * FOCUS_SECONDS;
+      assert.ok(Math.abs(elapsed - expected) <= 0.15, `${recipe.id}: ${elapsed} s / ${expected}`);
+      assert.equal(game.state.elapsed, CUT_SECONDS);
+    }
+  }
+});
+
+test('le mélange de six secondes garde le même effort moyen requis et le bonus plafonné', () => {
+  for (const [energy, outcome] of [
+    [0.174, 'mix'],
+    [0.18, 'won'],
+    [1, 'won'],
+  ] as const) {
+    let game: GameEngine;
+    game = new GameEngine(
+      RECIPES[0],
+      (id, kind, target, shiny) => {
+        if (target && !shiny && !isSpecialKind(kind)) game.hit(id);
+      },
+      () => 0.5,
+    );
+    game.start();
+    while (game.state.phase === 'countdown' || game.state.phase === 'playing') game.tick(0.05);
+    assert.equal(game.state.phase, 'mixing');
+    const score = game.state.score;
+    advance(game, MIX_SECONDS + 0.1, energy);
+    assert.equal(game.state.outcome, outcome);
+    assert.ok(game.state.mix <= 1);
+    assert.equal(
+      game.state.score - score,
+      outcome === 'won' ? Math.round(game.state.mix * 500) : 0,
+    );
+  }
+});
+
+test('les quotas courts restent atteignables avec des pièges et un bon ingrédient manqué sur cinq', () => {
+  for (const recipe of RECIPES) {
+    let seed = 42;
+    const random = () => (seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32;
+    let seen = 0;
+    let game: GameEngine;
+    game = new GameEngine(
+      recipe,
+      (id, kind, target, shiny) => {
+        if (!target || shiny || isSpecialKind(kind)) return;
+        seen += 1;
+        if (seen % 5 !== 0) game.hit(id);
+      },
+      random,
+    );
+    game.start();
+    advance(game, 54.2, 1);
+    assert.equal(game.state.outcome, 'won', `${recipe.id}, ${seen} bons ingrédients proposés`);
+    for (const kind of recipe.ingredients) assert.ok(game.state.counts[kind]! >= recipe.goal);
+  }
 });

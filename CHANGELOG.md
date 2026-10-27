@@ -2,6 +2,13 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 27 octobre 2026 — Des parties d’une minute et des explications plus lisibles
+
+- Une partie complète dure désormais environ 54 à 60 secondes, hors connexion, tutoriel et pauses : 3 secondes de décompte, 45 secondes de découpe, 6 secondes de mélange et jusqu’à deux défis rares de 3 secondes. Les quotas passent à 15 ingrédients pour le burger et 20 pour les tacos et le gâteau ; les frénésies, objets spéciaux et soins sont répartis sur cette nouvelle durée.
+- Les règles `stand-v0.6-minute` conservent le seuil de mélange à 35 % et ajustent son remplissage pour garder le même effort moyen. Les anciens résultats restent enregistrés et validés selon leurs propres durées et quotas, sans recalcul ni garantie de comparaison équitable entre versions.
+- Dix courts bruitages Kenney sous CC0, conservés localement avec leur provenance et leurs licences, accompagnent les gestes et événements. La partie n’a plus de boucle d’ambiance ni de musique de fond ; le mélange joue seulement pendant le mouvement. La bande-son du film reste distincte.
+- Les six étapes de l’atelier présentent des extraits plus lisibles : coloration syntaxique, lignes repérées et progression en trois étapes avec explications et animation synchronisée. Les références de source restent accessibles dans un volet repliable.
+
 ## 25 octobre 2026 — Un montage plus rythmé pour le stand
 
 - Le film conserve ses 32 secondes, réparties en onze séquences plus courtes. Gros plans sur les ingrédients, mouvements de caméra, découpes et grands titres rythment la présentation du geste, des pièges, de la frénésie, du bouclier et du mélange.

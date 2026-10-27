@@ -1,3 +1,38 @@
+# Parties d’une minute, bruitages locaux et lecture du code — 27 octobre 2026
+
+Les essais Chromium utilisent le serveur local sur **5173** et `STAND_DATA_DIR=/tmp/cookingninja-minute-oct27-qa`, séparé des scores réels. Cette évolution raccourcit les parties, remplace l’ambiance sonore continue par des bruitages d’action et ajoute une lecture guidée du code dans l’atelier. Les gestes tactiles et gyroscopiques ne sont pas modifiés.
+
+## Règles et vérifications automatisées
+
+- **149 tests réussis** ; `npm run typecheck`, `npm run build` et `npm run format:check` réussis.
+- Pour les trois recettes, les tests font avancer le vrai moteur depuis le départ jusqu’au résultat : environ **54 secondes** sans défi rare et **60 secondes** avec les deux défis de 3 secondes, avec une tolérance de simulation de 0,15 seconde. Connexion, tutoriel et pauses sont hors de ce temps.
+- Les quotas de **15 ingrédients pour le burger, 20 pour les tacos et 20 pour le gâteau** restent atteignables dans une simulation déterministe avec des pièges et un bon ingrédient volontairement manqué sur cinq. Ce scénario vérifie une marge de jeu ; il ne mesure pas la difficulté pour un visiteur ni une probabilité de victoire.
+- Le mélange de 6 secondes est testé sous le seuil de réussite, au-dessus et à énergie maximale. Le bonus reste plafonné à 500 points et aucune énergie n’est ajoutée après le temps restant. Les victoires calculées par le moteur pour les trois recettes passent aussi la validation du serveur.
+- La version `stand-v0.6-minute` applique les nouveaux temps et quotas. Les tests vérifient que les versions historiques `stand-v0.2`, `stand-v0.3-events`, `stand-v0.4-frenzy` et `stand-v0.5-hearts` gardent leurs anciennes limites, notamment les quotas, la durée minimale, les soins et le nombre maximal d’objets. Leur présence dans le classement historique est conservée, sans recalcul des scores.
+- Deux tests de l’atelier vérifient les lignes des **quatre extraits réels** dans leurs fichiers sources et les numéros de lignes des trois étapes de chaque exemple. Les deux autres exemples restent explicitement simplifiés.
+
+## Atelier dans Chromium
+
+- Les **18 étapes de lecture des six extraits** ont été parcourues en **1440 × 900**, sans débordement ni `pageerror` observé. Les six chapitres ont aussi été contrôlés en **1280 × 720** et **390 × 844**, sans débordement horizontal.
+- Les flèches du clavier changent l’étape de lecture ; **Échap** ferme le volet et le focus revient au bouton qui l’a ouvert. La navigation du diaporama reste suspendue pendant l’ouverture du code.
+- La pause arrête les paquets de l’illustration réseau. Le mouvement réduit garde les aperçus stables. L’inclinaison du téléphone illustré suit la démonstration de visée ; il s’agit d’une animation, sans lecture de capteurs.
+- Après fermeture du volet, un seul canvas demeure : celui du diaporama. Le canvas de l’aperçu de code est retiré. Ce contrôle de présence complète la revue du nettoyage, sans constituer une mesure de mémoire GPU.
+- La revue et les essais ont conduit à corriger le retour du focus clavier, la synchronisation du téléphone illustré et la pause de l’animation réseau. Les captures `output/playwright/minute-*` restent exclues du dépôt.
+
+## Bruitages et signal audio
+
+- Le vrai module `KitchenAudio`, importé depuis Vite, a été déverrouillé par un **clic dans Chromium**. Son contexte indique `running` et les **dix WAV locaux** se décodent.
+- Un analyseur placé après le compresseur mesure une crête de **0,35966 pour une coupe** et **0,20971 pendant le mélange**. Les échantillons contrôlés valent exactement **0 au repos, après la coupe, pendant le mélange sans geste, après la fin du geste, en sourdine et en pause**. Ces mesures concernent ce parcours du moteur sonore dans le navigateur ; elles ne mesurent pas le volume perçu.
+- Les sons locaux Kenney disposent des licences originales **CC0**, d’une provenance et d’un manifeste. Les SHA-256, les durées et le format des dix WAV livrés ont été vérifiés : PCM 16 bits mono à 44,1 kHz. Aucun son de visiteur n’est enregistré.
+
+Ces vérifications ne comprennent **aucune écoute sur haut-parleurs, aucun essai Safari ni téléphone physique et aucune mesure de latence**. Les gestes simulés et les mesures de signal Chromium ne prouvent ni le confort des capteurs ni le rendu sonore du matériel du salon.
+
+## Serveur de présentation
+
+Le mode `npm run phone` a été relancé après la compilation. Le serveur local **5174** et la nouvelle adresse HTTPS répondent tous deux à `/api/config`, avec `secure: true` et la même origine de contrôleur. Dans Chromium, l’atelier de production affiche le nouveau lecteur de code ; le menu présente un QR chargé dont le lien utilise le nouveau tunnel. Aucun `pageerror` observé dans ce parcours, aucune partie ni écriture de score effectuée sur les données réelles. Après ce redémarrage, les visiteurs doivent **rescanner le QR actualisé**. Ce contrôle HTTP et navigateur ne garantit pas l’accès depuis tous les réseaux du salon.
+
+---
+
 # Montage du film et export image par image — 25 octobre 2026
 
 Les essais utilisent `/tmp/cookingninja-motion-oct25-qa`, séparé des scores réels. Cette évolution porte sur le montage, les animations du film et sa bande-son. Le contrôleur, les règles des parties et le stockage du classement restent inchangés.

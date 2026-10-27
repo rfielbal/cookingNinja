@@ -26,7 +26,7 @@ export interface FocusState {
 
 export const SHIELD_SECONDS = 10;
 export const MAX_HEARTS = 3;
-export const HEART_SPAWN_TIMES: readonly number[] = [18, 40, 62];
+export const HEART_SPAWN_TIMES: readonly number[] = [18, 30, 42];
 export const SLOW_POINTS = 100;
 export const SLOW_SECONDS = 5;
 export const SLOW_WORLD_SPEED = 0.55;
@@ -37,13 +37,13 @@ export const FOCUS_SECONDS = 3;
 export const FOCUS_CUT_INTERVAL = 0.11;
 export const FOCUS_POINTS_PER_CUT = 50;
 export const FOCUS_MAX_BONUS = 1_500;
-export const SHINY_SPAWN_TIMES: readonly number[] = [12, 42];
+export const SHINY_SPAWN_TIMES: readonly number[] = [10, 28];
 export const SPECIAL_SPAWN_INTERVAL = 8;
 export const ACTIVE_LIFETIME = 8;
 export const SPECIAL_SEQUENCE: readonly SpecialKind[] = ['shield', 'danger', 'slow'];
 export const RUSH_WINDOWS: readonly { start: number; end: number }[] = [
-  { start: 20, end: 30 },
-  { start: 50, end: 60 },
+  { start: 12, end: 18 },
+  { start: 33, end: 39 },
 ];
 
 export function isSpecialKind(kind: ArenaKind): kind is SpecialKind {
