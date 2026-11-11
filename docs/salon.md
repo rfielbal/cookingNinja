@@ -2,6 +2,28 @@
 
 Support de préparation pour une démonstration BTS SIO. Le visiteur utilise son propre téléphone ; l’exposant garde la maîtrise du PC et du classement. Après la partie, une invitation facultative ouvre `/atelier#atelier-decouverte` dans un nouvel onglet : un diaporama en six étapes animées pour comprendre le jeu, en conservant le résultat.
 
+## Démarrage rapide et secours
+
+Depuis le dossier du projet, sur le PC préparé avec ses dépendances installées :
+
+```sh
+npm run phone
+```
+
+Garder le terminal ouvert et ouvrir **http://localhost:5174** sur le PC. Scanner le **nouveau QR** affiché par « Connecter mon téléphone ». Faire une partie complète avec un vrai téléphone avant l’accueil des visiteurs : autorisation des mouvements, calibration, coupe, mélange et écoute des sons sur le PC. Les essais automatisés ne remplacent pas cette vérification matérielle.
+
+Si Internet ou le tunnel ne fonctionne plus, terminer la partie en cours puis arrêter `npm run phone` avec **Ctrl+C**. Pour le secours local, réutiliser la compilation déjà produite :
+
+```sh
+HOST=0.0.0.0 PORT=5174 npm start
+```
+
+Le PC reste sur **http://localhost:5174** afin de conserver l’accès à l’enregistrement des scores. Mettre le téléphone sur le même réseau, scanner le nouveau QR local et choisir **Tactile**. Le réseau doit autoriser les appareils à communiquer. Le gyroscope ne fonctionne pas sur cette adresse HTTP ; la souris reste disponible si le réseau local ne passe pas.
+
+Cette relance est nécessaire : `npm run phone` écoute volontairement sur la boucle locale du PC et son tunnel exige Internet. Son adresse LAN affichée ne constitue donc pas à elle seule un secours accessible au téléphone. Ne pas lancer les deux commandes simultanément sur le même classement et ne pas réutiliser une ancienne variable `PUBLIC_ORIGIN` pour le secours local.
+
+Les vérifications effectuées avant la présentation du 12 novembre 2026 figurent en tête de [docs/validation.md](validation.md). Le scénario LAN a été essayé depuis un navigateur sur ce Mac ; l’isolation du Wi-Fi du salon reste à vérifier sur place.
+
 ## Le choix pour cette version
 
 Conserver **TypeScript, React, Three.js et le relais Node.js/WebSocket**. Le jeu, les règles et le contrôleur existent déjà dans cette stack : le besoin du salon est de rendre ce parcours fiable et compréhensible, pas de changer de moteur.

@@ -2,6 +2,13 @@
 
 Les étapes antérieures à la publication sont reconstituées à partir de la documentation et des validations du projet. Elles décrivent son évolution fonctionnelle ; elles ne correspondent pas à des commits, des tags ou des instantanés Git conservés.
 
+## 11 novembre 2026 — Vérification avant le salon
+
+- Un échec de démarrage sur un port occupé libère désormais le verrou du classement, avec un message explicite. Un certificat TLS invalide est refusé avant l’ouverture du classement. Trois tests de démarrage vérifient aussi la conservation des scores et la relance après arrêt normal.
+- Mise à jour compatible de `body-parser` (2.4.0), `qs` (6.17.1) et Vite (7.3.8), après les alertes de l’audit des dépendances ; aucun changement majeur de bibliothèque.
+- Le bouton de bouclier dans les exemples de code de l’atelier retrouve un fond et un texte contrastés, y compris sur téléphone.
+- Audit des trois recettes, des commandes PC/téléphone, du tunnel HTTPS, du classement, du film et de l’atelier. Résultats et limites consignés dans `docs/validation.md` ; procédure de démarrage et de secours local précisée dans `docs/salon.md`.
+
 ## 27 octobre 2026 — Des parties d’une minute et des explications plus lisibles
 
 - Une partie complète dure désormais environ 54 à 60 secondes, hors connexion, tutoriel et pauses : 3 secondes de décompte, 45 secondes de découpe, 6 secondes de mélange et jusqu’à deux défis rares de 3 secondes. Les quotas passent à 15 ingrédients pour le burger et 20 pour les tacos et le gâteau ; les frénésies, objets spéciaux et soins sont répartis sur cette nouvelle durée.

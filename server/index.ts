@@ -81,55 +81,26 @@ app.get('/api/config', (_request, response) => {
   response.setHeader('Cache-Control', 'no-store');
   response.json(config);
 });
+// Validate the TLS material before acquiring the persistent score lock.
+const server = tls ? createHttpsServer(tls, app) : createHttpServer(app);
 const standStore = await StandStore.open(
   resolve(process.env.STAND_DATA_DIR ?? resolve(root, 'data')),
 );
 app.use('/api', createStandRouter(standStore));
 
-const server = tls ? createHttpsServer(tls, app) : createHttpServer(app);
 const production = process.env.NODE_ENV === 'production';
 const relay = createRelay({ server, allowedOrigins, allowOtherUpgrades: !production });
 let closeVite: (() => Promise<void>) | undefined;
-if (production) {
-  app.use(express.static(resolve(root, 'dist'), { index: false }));
-  app.use((request, response, next) => {
-    if (request.method !== 'GET' || request.path.startsWith('/api/')) return next();
-    response.sendFile(resolve(root, 'dist/index.html'));
-  });
-} else {
-  const { createServer: createViteServer } = await import('vite');
-  const vite = await createViteServer({
-    root,
-    server: {
-      middlewareMode: true,
-      hmr: { server },
-      allowedHosts: [hostname(), ...(publicOrigin ? [new URL(publicOrigin).hostname] : [])],
-    },
-    appType: 'spa',
-  });
-  app.use(vite.middlewares);
-  closeVite = () => vite.close();
-}
-
-server.listen(port, host, () => {
-  console.info(`CookingNinja · ${scheme}://localhost:${port}`);
-  for (const url of localUrls) console.info(`Réseau local · ${url}`);
-  if (publicOrigin) console.info(`Téléphone (HTTPS) · ${publicOrigin}`);
-  if (!tls && !publicOrigin)
-    console.info(
-      'Mouvements du téléphone : configurez HTTPS ou PUBLIC_ORIGIN (tunnel HTTPS). Le mode tactile reste disponible en HTTP.',
-    );
-});
 
 let shuttingDown = false;
-async function shutdown() {
+async function shutdown(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   await relay.close();
   await standStore.close();
   await closeVite?.();
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 3_000).unref();
+  server.close(() => process.exit(exitCode));
+  setTimeout(() => process.exit(exitCode), 3_000).unref();
 }
 process.on('SIGTERM', () => {
   void shutdown();
@@ -137,3 +108,50 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   void shutdown();
 });
+
+function startupError(error: unknown) {
+  const code = (error as NodeJS.ErrnoException).code;
+  console.error(
+    code === 'EADDRINUSE'
+      ? `Le port ${port} est déjà utilisé. Le serveur existant reste intact ; arrêtez-le ou choisissez un autre PORT.`
+      : 'Impossible de démarrer CookingNinja :',
+    ...(code === 'EADDRINUSE' ? [] : [error]),
+  );
+  void shutdown(1);
+}
+// A failed listen or Vite initialization must release the score lock just like Ctrl+C.
+server.on('error', startupError);
+try {
+  if (production) {
+    app.use(express.static(resolve(root, 'dist'), { index: false }));
+    app.use((request, response, next) => {
+      if (request.method !== 'GET' || request.path.startsWith('/api/')) return next();
+      response.sendFile(resolve(root, 'dist/index.html'));
+    });
+  } else {
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      root,
+      server: {
+        middlewareMode: true,
+        hmr: { server },
+        allowedHosts: [hostname(), ...(publicOrigin ? [new URL(publicOrigin).hostname] : [])],
+      },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+    closeVite = () => vite.close();
+  }
+
+  server.listen(port, host, () => {
+    console.info(`CookingNinja · ${scheme}://localhost:${port}`);
+    for (const url of localUrls) console.info(`Réseau local · ${url}`);
+    if (publicOrigin) console.info(`Téléphone (HTTPS) · ${publicOrigin}`);
+    if (!tls && !publicOrigin)
+      console.info(
+        'Mouvements du téléphone : configurez HTTPS ou PUBLIC_ORIGIN (tunnel HTTPS). Le mode tactile reste disponible en HTTP.',
+      );
+  });
+} catch (error) {
+  startupError(error);
+}

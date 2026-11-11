@@ -1,3 +1,52 @@
+# Audit avant présentation — 11 novembre 2026
+
+Les essais utilisent Node.js 22.20.0, Chrome/Chromium sur ce Mac et des classements temporaires distincts : `/private/tmp/cookingninja-audit-20261111` (développement, 5186), `/private/tmp/cookingninja-https-audit-20261111` (production et tunnel, 5187), ainsi qu’une instance LAN temporaire sur 5192. Aucun score d’audit n’est ajouté au classement réel. Les captures et scripts de contrôle restent hors dépôt.
+
+## Vérifications et corrections
+
+- **152 tests réussis**, TypeScript, compilation de production et format Prettier réussis.
+- Port occupé : défaut reproduit avant correction, avec arrêt du processus et verrou orphelin. Après correction, sortie en erreur avec message français, verrou libéré, fichier des scores identique et serveur occupant le port intact. Deux démarrages/arrêts successifs du même classement temporaire réussissent.
+- Certificat TLS invalide : défaut reproduit puis corrigé en construisant le serveur HTTP/HTTPS avant d’acquérir le verrou. Le test utilise uniquement des fichiers PEM factices temporaires. Le nettoyage d’un échec d’initialisation Vite est relu dans le code, sans simulation directe de cet échec.
+- Dépendances : `body-parser` 2.3.0 → 2.4.0, `qs` 6.16.0 → 6.17.1 et Vite 7.3.6 → 7.3.8. `npm audit` retourne **0 alerte connue** à cette date, après les mises à jour compatibles. Cela ne constitue pas une garantie d’absence de toute vulnérabilité. Avis consultés : [body-parser](https://github.com/advisories/GHSA-27r3-jxmh-p828), [qs](https://github.com/advisories/GHSA-6pq8-jhm2-2vcw).
+- Atelier : le bouton de bouclier avait un texte crème sur un fond natif presque blanc. Fond vert et couleur de texte maintenant explicites ; contraste calculé de 1,04:1 à 8,97:1. États activé/désactivé et focus clavier relus aux deux tailles testées.
+
+## Parties complètes dans le navigateur
+
+Le pilote lit les positions projetées des aliments, puis envoie des événements de souris dans l’arène. Il ne modifie ni les scores, ni les règles, ni le temps du moteur. Les vraies collisions de `KitchenScene`, les transitions React et les requêtes HTTP de résultat sont exécutées. La visée est automatisée : ce n’est pas une mesure de difficulté pour un visiteur.
+
+| Recette | Résultat | Score de test | Mélange | Durée observée |
+| --- | --- | ---: | ---: | ---: |
+| Burger | Victoire, enregistrement HTTP 200 | 8 600 | 100 % | 60,93 s, dont une pause volontaire |
+| Tacos | Victoire, enregistrement HTTP 200 | 9 600 | 100 % | 60,09 s |
+| Gâteau | Victoire, enregistrement HTTP 200 | 12 500 | 100 % | 60,12 s |
+
+- Frénésie, rares et ralenti traversés sur les trois parties ; aucune erreur JavaScript ni requête HTTP échouée observée. La pause conserve le temps restant, puis la reprise fonctionne.
+- Trois pièges coupés dans un autre parcours donnent zéro cœur, un résultat d’échec et un enregistrement HTTP 200, sans victoire classée. Un mélange sans énergie aboutit également au résultat d’échec attendu.
+- Depuis ce résultat réel, « Entrez dans les coulisses du jeu » ouvre `/atelier#atelier-decouverte` dans un nouvel onglet et conserve le résultat sur le PC. « Joueur suivant » retrouve la sélection avec un nouveau pseudo.
+- Les trois parties décodent les dix échantillons audio locaux ; contexte `running` et crêtes mesurées entre 0,39 et 0,41 après compression. Ce contrôle confirme un signal sonore dans le navigateur, pas son audibilité sur les haut-parleurs.
+- Stress complémentaire du moteur : **9 000 simulations**, trois recettes, 1 000 graines par scénario et 0/20/40 % de bons aliments manqués. Aucun blocage. Avec 0 ou 20 % manqués, tous les scénarios gagnent ; les durées actives vont de 54,15 à 60,15 s avec un pas de simulation de 50 ms. Ces simulations coupent à l’apparition et ne passent pas par le réseau ou la visée.
+- Collision numérique de la vraie méthode `slash` sur quatre tailles : 1440 × 900, 1920 × 1080, 390 × 844 et 844 × 390. Hors cible, geste immobile et doublon refusés ; traversée comptée. Ce contrôle sans renderer ne mesure pas les performances GPU.
+
+## Téléphone, connexion et secours
+
+- Deux contextes Chrome séparés, dont un écran mobile 390 × 844, échangent de vrais WebSockets : appairage, lancement depuis le téléphone, pause/reprise, tactile → gyro, calibration, recentrage, reconnexion au même salon, retour tactile et départ volontaire. Les événements de capteurs sont **simulés**, pas mesurés sur un téléphone.
+- Le doigt reste suivi après redimensionnement de 390 × 844 à 390 × 760. Aucun débordement horizontal ou vertical du contrôleur ni erreur JavaScript observés.
+- Permissions refusées, API d’orientation absente et rechargement du téléphone vérifiés : explication et secours tactile disponibles, siège du même onglet repris.
+- `npm run phone` avec données temporaires : configuration `secure: true`, page publique en contexte HTTPS sécurisé, appairage, départ, pause/reprise et reconnexion contrôlés via le tunnel de production. Les deux navigateurs tournent sur ce Mac ; ce n’est pas un essai du réseau 5G d’un visiteur.
+- LAN HTTP : instance `HOST=0.0.0.0` sur 5192, contexte non sécurisé confirmé depuis l’adresse réseau du Mac ; gyro refusé avec explication HTTPS, tactile reçu par le PC. Instance arrêtée proprement et verrou temporaire libéré. La procédure de secours précise maintenant qu’il faut arrêter le mode tunnel avant de lancer ce serveur LAN.
+- Lancement habituel sur 5174 rétabli après les essais : ancien PID du verrou confirmé absent, absence d’autre serveur vérifiée, sauvegarde locale des scores avant retrait du seul verrou orphelin. Accès local et nouvelle origine HTTPS en HTTP 200, `secure: true` et empreinte SHA-256 du classement réel identique avant/après. Les serveurs d’essai et leur tunnel ont été arrêtés.
+
+## Film et atelier
+
+- Film local **32 s, 1920 × 1080** : lecture qui avance, boucle contrôlée après déplacement près de la fin, pause/reprise, activation/coupure du son et retour par Échap. Le salon et les commandes du téléphone restent conservés. Aucun export vidéo n’a été régénéré.
+- Six chapitres et dix-huit étapes de lecture du code parcourus via les commandes visibles, en **1440 × 900** et **390 × 844**. Fenêtres dans le viewport, aucun débordement horizontal ni erreur JavaScript. Un seul canvas reste après fermeture du volet de code.
+
+## Ce qu’il reste à faire sur le matériel du stand
+
+Avant les visiteurs : une partie complète sur le téléphone réel, une écoute sur la sortie audio utilisée, puis une coupure/reconnexion et un essai du réseau de secours. Aucun essai Safari physique, aucune mesure de latence mobile, de confort gyroscopique ou de FPS du matériel du salon n’est déduit de cet audit. Le tunnel temporaire change après redémarrage : rescanner le QR courant.
+
+---
+
 # Parties d’une minute, bruitages locaux et lecture du code — 27 octobre 2026
 
 Les essais Chromium utilisent le serveur local sur **5173** et `STAND_DATA_DIR=/tmp/cookingninja-minute-oct27-qa`, séparé des scores réels. Cette évolution raccourcit les parties, remplace l’ambiance sonore continue par des bruitages d’action et ajoute une lecture guidée du code dans l’atelier. Les gestes tactiles et gyroscopiques ne sont pas modifiés.
